@@ -5,6 +5,7 @@ import { errorMessage, errorStatus } from "../shared/errors.ts";
 import { serveAudio } from "./audio.ts";
 import type { ImportedLabs } from "./import-labs.ts";
 import type { LessonImporter } from "./importer.ts";
+import { AccessError } from "./mega-source.ts";
 import type { Catalog, RequestHandler } from "./types.ts";
 
 function json(res: ServerResponse, status: number, value: unknown) {
@@ -57,9 +58,16 @@ export function createStudyHandler({
           try {
             await importer.authorize(req);
             return json(res, 200, { authenticated: true });
-          } catch {
+          } catch (error) {
+            if (!(error instanceof AccessError)) throw error;
             return json(res, 200, { authenticated: false });
           }
+        }
+        if (path === "/study-api/auth/restore" && req.method === "POST") {
+          if (!importer.session)
+            return json(res, 200, { authenticated: false });
+          await importer.connect(res);
+          return json(res, 200, { authenticated: true });
         }
         if (path === "/study-api/auth/login" && req.method === "POST") {
           await importer.source.login();
@@ -251,12 +259,28 @@ export function createStudyHandler({
         return json(res, 401, { error: errorMessage(error) });
       if (importer && path.startsWith("/study-api/auth/"))
         return json(res, 400, {
-          error:
-            "Could not connect to MEGA. Check the browser login and your connection. If the browser is missing, run npm run setup:import.",
+          error: connectionError(error),
         });
       return json(res, 500, {
         error: "Could not save or read data. Check file permissions.",
       });
     }
   };
+}
+
+function connectionError(error: unknown) {
+  const detail = errorMessage(error);
+  if (/SingletonLock|ProcessSingleton|profile.*in use/i.test(detail))
+    return "The saved MEGA browser profile is already in use. Close the other MEGA Workshop instance and retry.";
+  if (
+    /Executable doesn.t exist|executable.*not found|distribution.*not found/i.test(
+      detail,
+    )
+  )
+    return "The login browser is missing. Run npm run setup:import, then retry.";
+  if (/EACCES|EPERM/.test(detail))
+    return "Cannot read or save the local MEGA session. Check permissions on your study data directory.";
+  if (/Timeout|net::|ENOTFOUND|ECONN|fetch failed/i.test(detail))
+    return "MEGA could not be reached. Check your connection and retry. Your saved login has been kept.";
+  return "Could not open or restore the MEGA session. Retry the connection or restart MEGA Workshop.";
 }
