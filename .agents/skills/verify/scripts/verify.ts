@@ -15,6 +15,7 @@ import type {
   Curriculum,
   ProviderStatus,
 } from "../../../../src/shared/types.ts";
+import { verifyLayout } from "./layout.ts";
 
 const root = fileURLToPath(new URL("../../../../", import.meta.url));
 const evidenceRoot = resolve(dataHome, ".audit/verify");
@@ -157,6 +158,7 @@ try {
   );
   context = await browser.newContext({
     viewport: { width: 1440, height: 1000 },
+    recordVideo: { dir: evidence, size: { width: 1440, height: 1000 } },
   });
   await context.route("**/*", (route) => {
     if (new URL(route.request().url()).origin === new URL(base).origin)
@@ -235,6 +237,7 @@ try {
   );
   assert.match(page.url(), /#\/lesson\/s01e01\/tokenization$/);
   await capture("02-topic");
+  await verifyLayout(page, evidence, record, capture);
   record(
     "Open guided example, tokenize text, reveal explanation and return to reading",
   );
@@ -652,6 +655,7 @@ try {
   const cleanupErrors: string[] = [];
   for (const operation of [
     () => context?.tracing.stop({ path: join(evidence, "trace.zip") }),
+    () => context?.close(),
     () => browser?.close(),
     async () => {
       if (!child?.pid || child.exitCode !== null || child.signalCode !== null)

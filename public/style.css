@@ -280,8 +280,8 @@ h1{font-size:clamp(24px,2.4vw,34px);line-height:1.25;letter-spacing:-.025em;over
  header{height:auto;min-height:60px;flex-wrap:wrap;padding:12px 16px}
  .header-actions{flex-wrap:wrap}
  .layout{display:block;min-height:0}
- .layout>aside{position:static;height:auto;max-height:240px}
- .layout>aside nav{min-height:80px;max-height:140px}
+ .layout>aside{position:static;height:auto;max-height:none}
+ .layout>aside nav{flex:none;height:140px;min-height:140px;max-height:140px}
  main{padding:24px 16px 32px}
  .lesson-heading{flex-direction:column;gap:8px}
  .lesson-heading>div:last-child{padding:0;justify-content:flex-start}
@@ -293,14 +293,11 @@ h1{font-size:clamp(24px,2.4vw,34px);line-height:1.25;letter-spacing:-.025em;over
  #lab-host{padding:0 12px 16px}
 }
 
-/* Practice owns the available height; only the embedded exercise scrolls. */
-main.practicing { height: calc(100dvh - 60px); padding-bottom: 8px; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr) auto; gap: 8px 16px; padding-top: 8px; }
+/* Keep the same heading and tab geometry in both modes. A viewport of
+   content also prevents shorter panels from clamping document scrolling. */
+main .workspace { min-height: 100dvh; }
 .practicing .topic-audio { display: none !important; }
-.practicing #group, .practicing .counter { display: none; }
-.practicing .lesson-heading { margin: 0; min-width: 0; }
-.practicing h1 { margin: 0; font-size: 20px; }
-.practicing .workspace-tabs { margin: 0; align-self: center; }
-.practicing .workspace { grid-column: 1 / -1; min-height: 0; overflow: hidden; }
+.practicing .workspace { height: 100dvh; overflow: hidden; }
 .practicing .practice { display: block; overflow: auto; height: 100%; }
 .practicing .task { flex: 0 1 auto; min-height: 36px; max-height: 30%; overflow: auto; margin: 0; padding: 8px 14px; border: 0; border-bottom: 1px solid var(--mega-line); border-radius: 0; }
 .practicing .task summary { color: var(--mega-ink-muted); }
@@ -310,12 +307,6 @@ main.practicing { height: calc(100dvh - 60px); padding-bottom: 8px; display: gri
 .practicing #lab-host iframe { height: 640px; }
 .practicing #saved { grid-column: 1 / -1; margin: 0; }
 .practicing #saved:empty { display: none; }
-@media(max-width:760px) {
- main.practicing { height: calc(100dvh - 60px); grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto; padding: 8px 12px; }
- .practicing .workspace { min-height: 0; }
- .practicing .workspace-tabs { align-self: stretch; }
- .practicing h1 { font-size: 18px; }
-}
 #complete-lesson{width:100%;margin-bottom:16px}#complete-lesson:disabled{opacity:.65;cursor:default}
 
 /* Startup stays visible before the application module or network is ready. */

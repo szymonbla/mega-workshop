@@ -43,7 +43,9 @@ Existing regression suite: `BROWSER_CHANNEL=chrome npm run test:browser`. Some r
 
 ## Evidence
 
-Every run prints its unique `.study-data/.audit/verify/run-*` directory. Keep `report.json` (actions, outcome, errors, cleanup), `doctor.json`, `server.log`, screenshots, ARIA snapshots, `storage.json` and `trace.zip`. Inspect a trace with `npx playwright show-trace .study-data/.audit/verify/run-*/trace.zip`, replacing the glob with the exact printed run path if there is more than one run.
+Every run prints its unique `.study-data/.audit/verify/run-*` directory. The helper also records a WebM video and `geometry.json`, and clicks through both local lessons at 1440, 820 and 390 pixels. It checks tab position across panel/audio changes, search/review layout stability, horizontal overflow and switching panels after mobile scrolling. Paid lab requests remain outside this proof.
+
+Keep `report.json` (actions, outcome, errors, cleanup), `doctor.json`, `server.log`, screenshots, ARIA snapshots, `storage.json` and `trace.zip`. Inspect a trace with `npx playwright show-trace .study-data/.audit/verify/run-*/trace.zip`, replacing the glob with the exact printed run path if there is more than one run.
 
 Capture actions and resulting states, not only a final screen. Verify side effects by reading storage and reloading/reopening through the UI; settings proof additionally reads the isolated env file and mode. Use real rendered data and requests. Mock only an external production boundary when the task needs one; label that proof. Never mock the course catalog to claim user-path coverage.
 
