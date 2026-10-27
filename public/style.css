@@ -301,13 +301,13 @@ main.practicing { height: calc(100dvh - 60px); padding-bottom: 8px; display: gri
 .practicing h1 { margin: 0; font-size: 20px; }
 .practicing .workspace-tabs { margin: 0; align-self: center; }
 .practicing .workspace { grid-column: 1 / -1; min-height: 0; overflow: hidden; }
-.practicing .practice { display: flex; flex-direction: column; overflow: hidden; height: 100%; }
+.practicing .practice { display: block; overflow: auto; height: 100%; }
 .practicing .task { flex: 0 1 auto; min-height: 36px; max-height: 30%; overflow: auto; margin: 0; padding: 8px 14px; border: 0; border-bottom: 1px solid var(--mega-line); border-radius: 0; }
 .practicing .task summary { color: var(--mega-ink-muted); }
 .practicing .task p { margin: 8px 0 0; padding: 0; border: 0; }
 .practicing .lab-toolbar { flex-shrink: 0; padding: 6px 12px; }
 .practicing #lab-host { flex: 1; min-height: 0; padding: 0; }
-.practicing #lab-host iframe { height: 100% !important; }
+.practicing #lab-host iframe { height: 640px; }
 .practicing #saved { grid-column: 1 / -1; margin: 0; }
 .practicing #saved:empty { display: none; }
 @media(max-width:760px) {
@@ -346,3 +346,25 @@ main.practicing { height: calc(100dvh - 60px); padding-bottom: 8px; display: gri
 @media(max-width:600px){.download-notice{margin:12px;flex-wrap:wrap}.download-notice button{margin-left:20px}.startup-stages{gap:10px}}
 
 #complete-topic{font-size:12px;min-height:36px}#complete-topic[aria-pressed=true]{border-color:var(--mx-ok);color:var(--mx-ok)}
+/* Examples: context, a short guide, then the interactive workspace. */
+.practice-intro{padding:28px 28px 20px;max-width:860px}
+.practice-intro h2{font:400 28px/1.3 var(--mega-heading);margin:8px 0 12px}
+.practice-intro p,.practice-finish p{font-size:14px;line-height:1.7;color:var(--mega-ink-muted);margin:0 0 14px}
+.practice-intro .quiet{font:13px var(--mega-sans);padding:8px 0}
+.practice .lab-toolbar{padding:0 28px;align-items:center;flex-wrap:wrap}
+#lab-choice{display:block;margin-bottom:10px}
+#lab-choice[hidden]{display:none}
+.practice-guide{margin:20px 28px 24px;padding:24px;border:1px solid var(--mega-line);border-radius:8px;background:var(--mega-surface);max-width:860px}
+.practice-guide h3{font:500 20px/1.4 var(--mega-heading);margin:0 0 20px}
+.practice-guide ol{list-style:none;counter-reset:guide;margin:0;padding:0;display:grid;gap:20px}
+.practice-guide li{counter-increment:guide;position:relative;padding-left:40px;font-size:14px;line-height:1.65}
+.practice-guide li::before{content:counter(guide);position:absolute;left:0;top:0;display:grid;place-items:center;width:26px;height:26px;border:1px solid var(--mega-line-strong);border-radius:50%;font:12px var(--mega-ui-mono);color:var(--mega-ink-muted)}
+.practice-guide li p{margin:4px 0 0;color:var(--mega-ink-body)}
+.practice-guide details{margin:20px 0 0 40px;font-size:13px}
+.practice-guide summary{padding:8px 0}
+.example-workspace{margin:0 28px;border:1px solid var(--mega-line);border-radius:8px;overflow:hidden}
+.example-workspace .pane-label{position:static;font-size:11px;letter-spacing:0;flex-wrap:wrap}
+.example-workspace #lab-host{padding:0}
+.practice-finish{padding:24px 28px 32px;max-width:860px}
+@media(max-width:760px){.practice-intro{padding:20px 12px}.practice .lab-toolbar{padding:0 12px}.practice-guide{margin:18px 12px;padding:18px 14px}.example-workspace{margin:0 12px}.practice-finish{padding:20px 12px}.practice-guide details{margin-left:0}}
+.example-start{margin-top:20px;min-height:40px}

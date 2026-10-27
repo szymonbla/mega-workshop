@@ -65,7 +65,9 @@ interface AppElements {
   "#panel-read": HTMLElementTagNameMap["section"];
   "#article": HTMLElementTagNameMap["article"];
   "#panel-practice": HTMLElementTagNameMap["section"];
-  "#task": HTMLElementTagNameMap["p"];
+  "#practice-guide": HTMLElementTagNameMap["div"];
+  "#practice-read": HTMLElementTagNameMap["button"];
+  "#practice-return": HTMLElementTagNameMap["button"];
   "#lab-tabs": HTMLElementTagNameMap["div"];
   "#source": HTMLElementTagNameMap["a"];
   "#lab-host": HTMLElementTagNameMap["div"];
