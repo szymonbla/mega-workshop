@@ -1,11 +1,11 @@
 ---
 name: verify
-description: Verify MEGA Study's local web UI through real browser actions, with isolated configuration, screenshots, traces and cleanup. Use after changes to the reader, course navigation, labs, audio or settings.
+description: Verify MEGA Workshop's local web UI through real browser actions, with isolated configuration, screenshots, traces and cleanup. Use after changes to the reader, course navigation, labs, audio or settings.
 ---
 
-# Verify MEGA Study
+# Verify MEGA Workshop
 
-Read [the feature map](features/README.md) first. This skill covers the root `mega-study` application; the nested `course-examples` CLI is a secondary surface with its own tests. Do not treat a passing browser journey as proof of CLI behavior.
+Read [the feature map](features/README.md) first. This skill covers the root `mega-workshop` application; the nested `course-examples` CLI is a secondary surface with its own tests. Do not treat a passing browser journey as proof of CLI behavior.
 
 ## Launch
 
@@ -23,7 +23,7 @@ Without installed Chrome, after installing Chromium:
 .agents/skills/verify/scripts/verify.mjs
 ```
 
-The executable helper launches `scripts/server.mjs`, which calls the production `startStudy` function with a test substitute for the external MEGA authentication service, with `PORT=0` and a unique temporary `MEX_ENV_FILE`, removes inherited OpenAI/OpenRouter keys, and reads the actual URL from `MEGA Study → http://localhost:<port>/`. It does not read or change the user's `.env`. No real MEGA login is performed. The helper clicks the actual login and connection controls against the test substitute. It requires locally stored, Git-ignored S01E01 files and an already imported S01E02 with its repository. Missing S01E02 is a failed prerequisite, not permission to fabricate its content. Its session and import-job state stay under scratch; it never opens the user’s MEGA browser profile. Ready means the catalog includes Tokenization and the browser renders the 20 course cards, not just an open socket.
+The executable helper launches `scripts/server.mjs`, which calls the production `startStudy` function with a test substitute for the external MEGA authentication service, with `PORT=0` and a unique temporary `MEX_ENV_FILE`, removes inherited OpenAI/OpenRouter keys, and reads the actual URL from `MEGA Workshop → http://localhost:<port>/`. It does not read or change the user's `.env`. No real MEGA login is performed. The helper clicks the actual login and connection controls against the test substitute. It requires locally stored, Git-ignored S01E01 files and an already imported S01E02 with its repository. Missing S01E02 is a failed prerequisite, not permission to fabricate its content. Its session and import-job state stay under scratch; it never opens the user’s MEGA browser profile. Ready means the catalog includes Tokenization and the browser renders the 20 course cards, not just an open socket.
 
 The helper owns the server and browser until its `finally` cleanup. Runs can coexist: each gets an OS-assigned port, temporary configuration, empty browser context and unique evidence directory. Do not drive an existing user instance on port 4830. Run this helper in the foreground and let it finish, including on assertion failure; do not abandon its process.
 

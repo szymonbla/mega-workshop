@@ -16,14 +16,14 @@ before(async () => {
   delete env.OPENROUTER_API_KEY;
   child = spawn(process.execPath, ['study/fixtures/authenticated-server.mjs'], {env, stdio: ['ignore', 'pipe', 'pipe']});
   base = await new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(Error('Study did not start')), 15000);
+    const timer = setTimeout(() => reject(Error('MEGA Workshop did not start')), 15000);
     let output = '';
     child.stdout.on('data', data => {
       output += data;
       const match = /http:\/\/localhost:\d+\//.exec(output);
       if (match) { clearTimeout(timer); resolve(match[0]); }
     });
-    child.once('exit', code => { clearTimeout(timer); reject(Error(`Study exited ${code}`)); });
+    child.once('exit', code => { clearTimeout(timer); reject(Error(`MEGA Workshop exited ${code}`)); });
   });
   browser = await chromium.launch(process.env.BROWSER_CHANNEL ? {channel: process.env.BROWSER_CHANNEL} : {});
 });

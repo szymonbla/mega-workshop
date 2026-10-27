@@ -1,4 +1,4 @@
-# MEGA Study verification map
+# MEGA Workshop verification map
 
 Use a fresh helper-owned server with temporary `MEX_ENV_FILE`, no provider keys, and a new browser context. S01E01 has 31 sections, 24 counted topics; the extended helper additionally requires the locally imported S01E02. Session state is isolated and the external MEGA authentication service is simulated; local access checks and lesson data are real. The root README includes stale completion-button instructions: report that path as blocked rather than filling localStorage to make it pass.
 

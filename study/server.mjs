@@ -40,7 +40,7 @@ export async function startStudy({port = Number(process.env.PORT || 4830), root 
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
   const viewer = await startStudy();
-  console.log(`MEGA Study → ${viewer.url}`);
+  console.log(`MEGA Workshop → ${viewer.url}`);
   for (const signal of ['SIGTERM', 'SIGINT']) {
     process.on(signal, () => viewer.close().then(() => process.exit(0)));
   }

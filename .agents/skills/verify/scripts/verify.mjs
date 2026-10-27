@@ -41,12 +41,12 @@ try {
   child = spawn(process.execPath, ['.agents/skills/verify/scripts/server.mjs'], {cwd: root, env, stdio: ['ignore', 'pipe', 'pipe']});
   child.stderr.on('data', data => { serverLog += data; });
   const base = await new Promise((resolveURL, reject) => {
-    const timer = setTimeout(() => reject(Error('Study startup timed out')), 15000);
+    const timer = setTimeout(() => reject(Error('MEGA Workshop startup timed out')), 15000);
     child.once('error', error => { clearTimeout(timer); reject(error); });
-    child.once('exit', code => { clearTimeout(timer); reject(Error(`Study exited: ${code}`)); });
+    child.once('exit', code => { clearTimeout(timer); reject(Error(`MEGA Workshop exited: ${code}`)); });
     child.stdout.on('data', data => {
       serverLog += data;
-      const match = /MEGA Study → (http:\/\/localhost:\d+\/)/.exec(serverLog);
+      const match = /MEGA Workshop → (http:\/\/localhost:\d+\/)/.exec(serverLog);
       if (match) { clearTimeout(timer); resolveURL(match[1]); }
     });
   });

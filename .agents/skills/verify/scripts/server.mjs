@@ -11,5 +11,5 @@ const source = {
   async close() {},
 };
 const viewer = await startStudy({source, stateDirectory: join(dirname(process.env.MEX_ENV_FILE), 'state')});
-console.log(`MEGA Study → ${viewer.url}`);
+console.log(`MEGA Workshop → ${viewer.url}`);
 process.on('SIGTERM', async () => { await viewer.close(); process.exit(0); });

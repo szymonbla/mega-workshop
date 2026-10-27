@@ -182,7 +182,7 @@ function setView(view) {
 function overview(focus=false) {
  selection = {kind: 'overview'};
  setView('overview');
- document.title='Course overview · MEGA Study';
+ document.title='Course overview · MEGA Workshop';
  const completed=courseLessons.filter(l=>counts(l).complete).length;
  $('#course-count').textContent=`${completed} / ${courseLessons.length}`;
  $('#course-progress').value=completed;
@@ -207,7 +207,7 @@ function openCourse(id, slug, push = true) {
   if (push) history.pushState(null, '', `#/lesson/${id}${slug ? '/' + slug : ''}`);
   selection = next;
   const lesson = next.lesson;
-  document.title = `${lesson.title} · MEGA Study`;
+  document.title = `${lesson.title} · MEGA Workshop`;
   if (next.kind === 'pending') {
     setView('pending');
     $('#pending-code').textContent = `Week ${lesson.week} / Lesson ${lesson.number} · ${lesson.id.toUpperCase()}`;
@@ -254,7 +254,7 @@ try {
   status().catch(() => { $('#key-status').textContent = 'API settings unavailable'; });
 } catch (error) {
   setView('overview');
-  $('#overview-title').textContent = 'Could not load MEGA Study';
+  $('#overview-title').textContent = 'Could not load MEGA Workshop';
   $('#resume-card').textContent = error.message;
 }
 

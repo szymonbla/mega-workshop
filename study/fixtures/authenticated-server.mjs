@@ -12,5 +12,5 @@ for(const entry of await readdir(original,{withFileTypes:true}))if(entry.isFile(
 for(const name of ['public','alignment'])await symlink(join(original,name),join(root,name),'dir');
 const source={availableLessons:async()=>[],check:async()=>({}),login:async()=>{},logout:async()=>{},close:async()=>{}};
 const viewer=await startStudy({root,source,stateDirectory:directory});
-console.log(`MEGA Study → ${viewer.url}`);
+console.log(`MEGA Workshop → ${viewer.url}`);
 process.on('SIGTERM',async()=>{await viewer.close();await rm(directory,{recursive:true,force:true});process.exit(0);});

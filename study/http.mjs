@@ -25,7 +25,7 @@ export function createStudyHandler({catalog, publicRoot, saveSettings, importer,
       const catalog = getCatalog();
       if (importer) {
         const mutation = !['GET','HEAD'].includes(req.method);
-        if (mutation && (req.headers.origin !== `http://${host}` || !req.headers['content-type']?.startsWith('application/json'))) return json(res,403,{error:'Use the local MEGA Study app.'});
+        if (mutation && (req.headers.origin !== `http://${host}` || !req.headers['content-type']?.startsWith('application/json'))) return json(res,403,{error:'Use the local MEGA Workshop app.'});
         if (path === '/study-api/auth/status' && req.method === 'GET') {
           try { await importer.authorize(req); return json(res,200,{authenticated:true}); }
           catch { return json(res,200,{authenticated:false}); }

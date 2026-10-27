@@ -58,7 +58,7 @@ Some exercises use an AI provider. Add your own key through **API settings** whe
 
 ## Where your data lives
 
-Imported lessons, images, audio, transcripts, login sessions, browser profiles, and downloaded exercises are stored under `.study-data/`. Git ignores this directory.
+Imported lessons, images, audio, transcripts, login sessions, browser profiles, and downloaded exercises are stored under `.study-data/`. Git ignores this directory. Internal data paths and browser storage keys keep their original names so existing sessions, notes, and progress still work after the rename to MEGA Workshop.
 
 | Location | Contents |
 | --- | --- |
