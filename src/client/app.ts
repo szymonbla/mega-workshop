@@ -25,6 +25,7 @@ const labs = createLabs({
   host: $("#lab-host"),
   tabs: $("#lab-tabs"),
   source: $("#source"),
+  guide: $("#practice-guide"),
   getTheme: () => document.documentElement.dataset.theme || "dark",
 });
 let weeks: Week[] = [],
@@ -152,6 +153,11 @@ function showPanel(name: string) {
   }
   player.refresh();
 }
+for (const id of ["#practice-read", "#practice-return"])
+  $(id).onclick = () => {
+    showPanel("read");
+    $("#tab-read").focus();
+  };
 for (const name of ["read", "practice"])
   $("#tab-" + name).onclick = () => showPanel(name);
 $(".workspace-tabs").addEventListener("keydown", (event) => {
@@ -214,7 +220,7 @@ function renderSection(next: Exclude<Selection, { kind: "overview" }>) {
           showPanel("practice");
           $(".practice").scrollTop = 0;
         });
-        link.title = "Open in Practice";
+        link.title = "Open example with instructions";
       } else {
         link.target = "_blank";
         link.rel = "noopener noreferrer";
@@ -226,7 +232,7 @@ function renderSection(next: Exclude<Selection, { kind: "overview" }>) {
       image.loading = "lazy";
       image.alt = "Illustration from the MEGA.dev article";
     });
-  $("#task").textContent = section.task;
+
   $("#tab-practice").hidden = !hasPractice(section);
   $(".workspace-tabs").hidden = !hasPractice(section);
   labs.select(section);

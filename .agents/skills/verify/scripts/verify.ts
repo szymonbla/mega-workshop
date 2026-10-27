@@ -235,6 +235,56 @@ try {
   );
   assert.match(page.url(), /#\/lesson\/s01e01\/tokenization$/);
   await capture("02-topic");
+  record(
+    "Open guided example, tokenize text, reveal explanation and return to reading",
+  );
+  await page.locator("#tab-practice").click();
+  assert.equal(await page.locator("#practice-guide li").count(), 3);
+  assert.equal(await page.locator("#lab-tabs").isVisible(), false);
+  assert.equal(
+    await page.locator("#practice-guide details").getAttribute("open"),
+    null,
+  );
+  await capture("02-example-guide");
+  await page.locator(".example-start").click();
+  const tokenLab = page.frameLocator(
+    'iframe[src="/ui/tokenization-round-trip/"]',
+  );
+  await tokenLab.locator("#text").fill("Saved experiment 🌍");
+  await tokenLab
+    .locator("#headline-text")
+    .filter({ hasText: "Decoding the IDs gives back the same text." })
+    .waitFor();
+  await capture("02-example-result");
+  await page.locator("#practice-guide summary").click();
+  assert.notEqual(
+    await page.locator("#practice-guide details").getAttribute("open"),
+    null,
+  );
+  await page.locator("#practice-return").click();
+  assert.equal(await page.locator("#panel-read").isVisible(), true);
+  await page
+    .locator('#article a[href*="/examples/tokenization-round-trip"]')
+    .click();
+  assert.equal(
+    await page.locator("#tab-practice").getAttribute("aria-selected"),
+    "true",
+  );
+  assert.equal(
+    await tokenLab.locator("#text").inputValue(),
+    "Saved experiment 🌍",
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator("#practice-guide").scrollIntoViewIfNeeded();
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
+  await capture("02-example-mobile");
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.locator("#practice-read").click();
   record("Return to overview, reload, then click Continue learning");
   await page.locator("#back-course").click();
   await page.reload();
