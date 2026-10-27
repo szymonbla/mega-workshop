@@ -234,3 +234,27 @@ progress::-webkit-progress-bar{background:var(--mega-line)}progress::-webkit-pro
 #lesson-import{width:min(620px,calc(100% - 32px));max-height:85dvh;overflow:auto}#import-form{display:grid;gap:12px}#import-form[hidden]{display:none}#import-steps{list-style:none;padding:0;margin:20px 0}#import-steps li{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid var(--mega-line)}#import-steps li>span:first-child{width:18px}#import-steps small{display:block;color:var(--mega-ink-muted)}#import-steps [data-state=done]>span:first-child{color:var(--mx-ok)}#import-steps [data-state=running]{color:var(--study-accent)}#import-steps [data-state=failed]{color:var(--mega-code-red)}#import-message{min-height:24px}#import-open{display:inline-block;padding:9px 13px}#import-open[hidden]{display:none}#import-disconnect{display:block;margin-top:24px}#import-disconnect[hidden]{display:none}#pending-import{margin:16px 12px 16px 0}@media(max-width:650px){header{height:auto;min-height:76px;flex-wrap:wrap;padding:12px}.header-actions{flex-wrap:wrap}#import-button{font-size:11px}}
 
 #lesson-transcript{display:inline-block;margin-right:16px;font-size:12px}#lesson-transcript[hidden]{display:none}
+
+/* Practice owns the available height; only the embedded exercise scrolls. */
+main.practicing { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr) auto; gap: 8px 16px; padding-top: 8px; }
+.practicing .topic-audio { display: none !important; }
+.practicing #group, .practicing .counter { display: none; }
+.practicing .lesson-heading { margin: 0; min-width: 0; }
+.practicing h1 { margin: 0; font-size: 20px; }
+.practicing .workspace-tabs { margin: 0; align-self: center; }
+.practicing .workspace { grid-column: 1 / -1; min-height: 0; overflow: hidden; }
+.practicing .practice { display: flex; flex-direction: column; overflow: hidden; height: 100%; }
+.practicing .task { flex: 0 1 auto; min-height: 36px; max-height: 30%; overflow: auto; margin: 0; padding: 8px 14px; border: 0; border-bottom: 1px solid var(--mega-line); border-radius: 0; }
+.practicing .task summary { color: var(--mega-ink-muted); }
+.practicing .task p { margin: 8px 0 0; padding: 0; border: 0; }
+.practicing .lab-toolbar { flex-shrink: 0; padding: 6px 12px; }
+.practicing #lab-host { flex: 1; min-height: 0; padding: 0; }
+.practicing iframe { height: 100%; }
+.practicing #saved { grid-column: 1 / -1; margin: 0; }
+.practicing #saved:empty { display: none; }
+@media(max-width:760px) {
+ main.practicing { height: calc(100dvh - 60px); grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto; padding: 8px 12px; }
+ .practicing .workspace { min-height: 0; }
+ .practicing .workspace-tabs { align-self: stretch; }
+ .practicing h1 { font-size: 18px; }
+}

@@ -150,6 +150,8 @@ function showPanel(name: string) {
     $(`#tab-${panel}`).setAttribute("aria-selected", String(selected));
     $(`#tab-${panel}`).tabIndex = selected ? 0 : -1;
   }
+  $("main").classList.toggle("practicing", name === "practice");
+  if (name === "practice") player.pause();
   player.refresh();
 }
 for (const name of ["read", "practice"])

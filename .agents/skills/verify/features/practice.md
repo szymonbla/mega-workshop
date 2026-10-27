@@ -7,6 +7,7 @@ Learners run local tokenization and retain experiment input when changing topics
 - `open`: Practice tab and inline article example link.
 - `round-trip`: local text tokenization and decoding.
 - `retain`: lab state survives topic navigation but resets on reload.
+- `layout`: Practice pauses and hides audio, uses a compact heading and collapsible instructions, and fits the lab frame to the remaining height without an outer panel scrollbar. The helper checks desktop and mobile geometry, local input, and returning through Read's inline lab link.
 
 ## How to get to it (user POV)
 
