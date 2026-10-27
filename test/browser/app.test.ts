@@ -111,6 +111,61 @@ async function chapter(page: Page, title: string) {
   await waitTitle(page, title);
 }
 
+test("startup explains delayed connection and course loading before revealing the workspace", async (t) => {
+  const context = await openContext(t);
+  let releaseStatus!: () => void;
+  let releaseCourse!: () => void;
+  const statusGate = new Promise<void>((resolve) => {
+    releaseStatus = resolve;
+  });
+  const courseGate = new Promise<void>((resolve) => {
+    releaseCourse = resolve;
+  });
+  t.after(() => {
+    releaseStatus();
+    releaseCourse();
+  });
+  await context.route("**/study-api/auth/status", async (route) => {
+    await statusGate;
+    await route.continue();
+  });
+  await context.route("**/study-api/import-labs", async (route) => {
+    await courseGate;
+    await route.continue();
+  });
+  const page = await context.newPage();
+  await page.goto(base, { waitUntil: "domcontentloaded" });
+  await page.locator("#startup").waitFor({ state: "visible" });
+  assert.match(
+    await page.locator("#startup-detail").innerText(),
+    /saved MEGA connection/,
+  );
+  assert.equal(await page.locator("#course-overview").isVisible(), false);
+  releaseStatus();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector(".startup-stages li:last-child")
+        ?.getAttribute("data-state") === "active",
+  );
+  assert.match(
+    await page.locator("#startup-detail").innerText(),
+    /Loading your course/,
+  );
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  assert.equal(
+    await page
+      .locator(".loading-orbit")
+      .evaluate(
+        (element) => getComputedStyle(element, "::before").animationName,
+      ),
+    "none",
+  );
+  releaseCourse();
+  await page.locator("#startup").waitFor({ state: "hidden" });
+  await page.locator("#week-grid .course-lesson").first().waitFor();
+});
+
 test("reader preserves old links, lab results, theme and audio interactions", {
   timeout: 60000,
 }, async (t) => {

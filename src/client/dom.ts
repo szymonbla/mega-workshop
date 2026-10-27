@@ -1,4 +1,13 @@
 interface AppElements {
+  "#startup": HTMLElement;
+  "#startup-title": HTMLHeadingElement;
+  "#startup-detail": HTMLParagraphElement;
+  "#connection-retry": HTMLButtonElement;
+  "#download-notice": HTMLDivElement;
+  "#download-detail": HTMLSpanElement;
+  "#download-details": HTMLButtonElement;
+  "#connection-activity": HTMLDivElement;
+  "#connection-detail": HTMLSpanElement;
   "#course-home": HTMLElementTagNameMap["button"];
   "#theme-toggle": HTMLElementTagNameMap["button"];
   "#import-button": HTMLElementTagNameMap["button"];

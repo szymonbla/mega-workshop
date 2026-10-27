@@ -317,3 +317,30 @@ main.practicing { height: calc(100dvh - 60px); padding-bottom: 8px; display: gri
  .practicing h1 { font-size: 18px; }
 }
 #complete-lesson{width:100%;margin-bottom:16px}#complete-lesson:disabled{opacity:.65;cursor:default}
+
+/* Startup stays visible before the application module or network is ready. */
+.startup{min-height:calc(100dvh - 60px);display:grid;place-items:center;padding:40px 24px}
+.startup[hidden],.download-notice[hidden]{display:none}
+.startup-card{width:min(100%,580px);text-align:center;animation:startup-enter .35s ease-out}
+.startup h1{font-size:clamp(26px,4vw,38px);letter-spacing:-.04em;margin:24px 0 12px}
+#startup-detail{color:var(--mega-ink-muted);line-height:1.7;min-height:3.4em}
+.loading-orbit{width:88px;height:88px;margin:36px auto 0;display:grid;place-items:center;position:relative;font-size:27px;font-weight:700}
+.loading-orbit:before{content:"";position:absolute;inset:0;border:1px solid var(--mega-line-strong);border-top:2px solid var(--study-accent);border-radius:50%;animation:startup-spin 1.5s linear infinite}
+.startup[aria-busy=false] .loading-orbit:before{animation:none;border-color:var(--mega-line-strong)}
+.startup-stages{list-style:none;padding:0;margin:32px 0;display:flex;gap:16px;text-align:left;counter-reset:stage}
+.startup-stages li{flex:1;color:var(--mega-ink-muted);font-size:12px;border-top:2px solid var(--mega-line);padding-top:12px;counter-increment:stage}
+.startup-stages li:before{content:counter(stage,decimal-leading-zero);display:block;margin-bottom:8px;font:11px var(--mega-ui-mono)}
+.startup-stages [data-state=active]{color:var(--mega-ink);border-color:var(--study-accent)}
+.startup-stages [data-state=done]{border-color:var(--mega-ink-muted)}
+.startup-stages [data-state=done]:before{content:"✓"}
+.connection-activity,.download-notice{display:flex;align-items:center;gap:12px;padding:16px;border:1px solid var(--mega-line);border-radius:8px;line-height:1.5}
+.connection-activity{margin:16px 0;background:var(--mega-code-bg)}
+.download-notice{margin:16px 24px;font-size:13px}.download-notice button{margin-left:auto;flex-shrink:0}
+.activity-dot{width:8px;height:8px;flex-shrink:0;border-radius:50%;background:var(--study-accent)}
+[data-busy=true] .activity-dot,.download-notice .activity-dot{animation:startup-pulse 1.4s ease-in-out infinite}
+#import-steps [data-state=running]>span:first-child{display:inline-block;animation:startup-pulse 1.4s ease-in-out infinite}
+@keyframes startup-spin{to{transform:rotate(360deg)}}
+@keyframes startup-pulse{50%{opacity:.35;transform:scale(.75)}}
+@keyframes startup-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.startup-card,.loading-orbit:before,.activity-dot,#import-steps [data-state=running]>span:first-child{animation:none!important}}
+@media(max-width:600px){.download-notice{margin:12px;flex-wrap:wrap}.download-notice button{margin-left:20px}.startup-stages{gap:10px}}

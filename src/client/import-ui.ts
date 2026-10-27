@@ -10,6 +10,30 @@ export function createImportUI({
 }) {
   const $ = query;
   const dialog = $("#lesson-import");
+  function activity(text: string, busy = false) {
+    $("#connection-detail").textContent = text;
+    $("#connection-activity").dataset.busy = String(busy);
+  }
+  function startup(step: number, title: string, detail: string) {
+    if ($("#startup").hidden) return;
+    $("#startup-title").textContent = title;
+    $("#startup-detail").textContent = detail;
+    $("#startup")
+      .querySelectorAll("li")
+      .forEach((item, index) => {
+        item.setAttribute(
+          "data-state",
+          index < step ? "done" : index === step ? "active" : "pending",
+        );
+      });
+    activity(detail, true);
+  }
+  $("#connection-retry").onclick = () => location.reload();
+  $("#download-details").onclick = () => {
+    if (!dialog.open) dialog.showModal();
+    void refresh();
+  };
+
   let authenticated = false,
     selected: ImportJob | null = null,
     timer: ReturnType<typeof setInterval>,
@@ -18,6 +42,18 @@ export function createImportUI({
   const message = (text: string) => {
     $("#import-message").textContent = text;
   };
+  function reportError(error: unknown) {
+    const detail = errorMessage(error);
+    message(
+      /timeout|aborted/i.test(detail)
+        ? "This is taking longer than expected. Check your connection and retry. Your saved lessons are safe."
+        : /fetch|network/i.test(detail)
+          ? "Could not reach the application. Make sure it is still running, then retry."
+          : detail,
+    );
+    activity("This step could not finish. See the message below and retry.");
+    $("#connection-retry").hidden = false;
+  }
   async function api<T = { ok: boolean }>(
     path: string,
     body?: unknown,
@@ -25,8 +61,9 @@ export function createImportUI({
     const response = await fetch(
       `/study-api/${path}`,
       body === undefined
-        ? {}
+        ? { signal: AbortSignal.timeout(60000) }
         : {
+            signal: AbortSignal.timeout(60000),
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body),
@@ -42,6 +79,11 @@ export function createImportUI({
   function lock() {
     if (authenticated) onDisconnected();
     authenticated = false;
+    $("#startup").hidden = true;
+    $("#download-notice").hidden = true;
+    activity(
+      "Sign in to MEGA. We will then find and prepare your available lessons.",
+    );
     $("#import-sync").hidden = true;
     $("#import-auth").hidden = false;
     $("#import-form").hidden = true;
@@ -52,14 +94,28 @@ export function createImportUI({
   }
   async function connected() {
     authenticated = true;
+    $("#connection-retry").hidden = true;
     $("#import-sync").hidden = false;
     $("#import-auth").hidden = true;
     $("#import-form").hidden = false;
     $("#import-disconnect").hidden = false;
     $("#import-close").hidden = false;
     $("#import-button").textContent = "Add lesson";
+    startup(
+      1,
+      "Finding your lessons",
+      "Checking access and starting background downloads. Existing lessons stay on this computer.",
+    );
+    activity("Checking your available lessons…", true);
     await api("imports/sync", {});
+    startup(
+      2,
+      "Opening your workspace",
+      "Loading your course, reading materials and exercises. This can take a moment.",
+    );
+    activity("Opening your course…", true);
     await onConnected();
+    $("#startup").hidden = true;
     await refresh();
   }
   function render(job: ImportJob | null) {
@@ -142,6 +198,15 @@ export function createImportUI({
         : sync?.status === "completed"
           ? `All ${sync.total} available lessons are ready.`
           : sync?.error || "";
+      const preparing = syncing || job?.status === "running";
+      const detail =
+        job?.status === "running"
+          ? `${job.id.toUpperCase()} · ${job.steps.find((step) => step.status === "running")?.label || "Preparing lesson"}`
+          : $("#import-sync-status").textContent || "Your workspace is ready.";
+      activity(detail, preparing);
+      $("#download-notice").hidden = !preparing;
+      $("#download-detail").textContent =
+        `${detail} You can read ready lessons while we work.`;
       $("#import-button").textContent = syncing
         ? "Downloading lessons…"
         : "Your lessons";
@@ -154,7 +219,10 @@ export function createImportUI({
         $("#import-failures").append(row);
       }
     } catch (error) {
-      message(errorMessage(error));
+      reportError(error);
+      activity(
+        "Could not update download progress. We will try again shortly.",
+      );
     } finally {
       busy = false;
     }
@@ -166,7 +234,7 @@ export function createImportUI({
       render(job);
       await refresh();
     } catch (error) {
-      message(errorMessage(error));
+      reportError(error);
       $("#import-submit").disabled = false;
     }
   }
@@ -175,7 +243,7 @@ export function createImportUI({
       await api("imports/sync", {});
       await refresh();
     } catch (error) {
-      message(errorMessage(error));
+      reportError(error);
     }
   };
   $("#import-button").onclick = () => {
@@ -188,27 +256,34 @@ export function createImportUI({
   });
   $("#import-login").onclick = async () => {
     $("#import-login").disabled = true;
+    activity("Opening a private MEGA browser window…", true);
     message("Opening a private MEGA browser window…");
     try {
       await api("auth/login", {});
+      activity(
+        "Waiting for you to sign in. Return here and select Continue when you are ready.",
+      );
       message(
         "Finish signing in in the MEGA browser window, then select Continue.",
       );
     } catch (error) {
-      message(errorMessage(error));
+      reportError(error);
     } finally {
+      $("#connection-activity").dataset.busy = "false";
       $("#import-login").disabled = false;
     }
   };
   $("#import-connected").onclick = async () => {
     $("#import-connected").disabled = true;
+    activity("Verifying your MEGA connection…", true);
     try {
       await api("auth/complete", {});
       message("Connected to MEGA.");
       await connected();
     } catch (error) {
-      message(errorMessage(error));
+      reportError(error);
     } finally {
+      $("#connection-activity").dataset.busy = "false";
       $("#import-connected").disabled = false;
     }
   };
@@ -218,7 +293,7 @@ export function createImportUI({
       lock();
       message("Disconnected from MEGA.");
     } catch (error) {
-      message(errorMessage(error));
+      reportError(error);
     }
   };
   $("#import-form").onsubmit = (event) => {
@@ -239,13 +314,22 @@ export function createImportUI({
     async initialize() {
       try {
         let status = await api<{ authenticated: boolean }>("auth/status");
-        if (!status.authenticated)
+        if (!status.authenticated) {
+          startup(
+            0,
+            "Restoring your MEGA connection",
+            "Looking for your saved login so you do not have to sign in again.",
+          );
           status = await api<{ authenticated: boolean }>("auth/restore", {});
+        }
         if (status.authenticated) await connected();
         else lock();
       } catch (error) {
         lock();
-        message(errorMessage(error));
+        reportError(error);
+        activity(
+          "We could not finish connecting. Try signing in again, or reload to retry.",
+        );
       }
       let ticks = 0;
       timer = setInterval(async () => {
@@ -255,7 +339,7 @@ export function createImportUI({
             const status = await api<{ authenticated: boolean }>("auth/status");
             if (!status.authenticated) lock();
           } catch (error) {
-            message(errorMessage(error));
+            reportError(error);
           }
         }
       }, 3000);

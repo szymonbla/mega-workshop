@@ -515,9 +515,9 @@ addEventListener("popstate", () => {
 async function loadCourse() {
   try {
     const responses = await Promise.all([
-      fetch("/study-api/curriculum"),
-      fetch("/api/items"),
-      fetch("/study-api/import-labs"),
+      fetch("/study-api/curriculum", { signal: AbortSignal.timeout(60000) }),
+      fetch("/api/items", { signal: AbortSignal.timeout(60000) }),
+      fetch("/study-api/import-labs", { signal: AbortSignal.timeout(60000) }),
     ]);
     if (responses.some((response) => !response.ok))
       throw Error("The server did not return the course content.");
@@ -535,6 +535,7 @@ async function loadCourse() {
     setView("overview");
     $("#overview-title").textContent = "Could not load MEGA Workshop";
     $("#resume-card").textContent = errorMessage(error);
+    throw error;
   }
 }
 const importer = createImportUI({
