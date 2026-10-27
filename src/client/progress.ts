@@ -45,10 +45,10 @@ export function readProgress(
     const note = get(progressKey(id, "note", section.id));
     if (note !== null) state.notes[section.id] = note;
     const status = get(progressKey(id, "status", section.id));
-    if (status === "done" || status === "again") {
+    if (status === "done" || status === "again" || status === "pending") {
       state.done = state.done.filter((value) => value !== section.id);
       state.again = state.again.filter((value) => value !== section.id);
-      state[status].push(section.id);
+      if (status !== "pending") state[status].push(section.id);
     }
   }
   const current = get(progressKey(id, "current"));
@@ -135,12 +135,14 @@ export function createProgressStore(
     },
     mark(lesson: ProgressLesson, sectionId: string, status: string) {
       if (
-        !["done", "again"].includes(status) ||
+        !["done", "again", "pending"].includes(status) ||
         !lesson.sections.some(
           (section) => section.id === sectionId && section.kind === "topic",
         )
       ) {
-        throw Error("Only a learning topic can be marked done or again.");
+        throw Error(
+          "Only a learning topic can be marked done, again or pending.",
+        );
       }
       const saved = write(progressKey(lesson.id, "status", sectionId), status);
       return { saved, state: read(lesson) };

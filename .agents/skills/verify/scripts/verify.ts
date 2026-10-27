@@ -318,6 +318,31 @@ try {
     JSON.stringify(storage, null, 2),
   );
   await capture("03-resumed");
+  record("Complete one topic and undo it after reload using the topic control");
+  await page.locator("#complete-topic").click();
+  assert.equal(
+    await page.locator("#progress-label").textContent(),
+    "1 of 24 topics completed",
+  );
+  await page.reload();
+  await page
+    .locator('#complete-topic[aria-pressed="true"]')
+    .waitFor({ state: "visible" });
+  await capture("03-topic-completed");
+  await page.locator("#complete-topic").click();
+  assert.equal(
+    await page.locator("#progress-label").textContent(),
+    "0 of 24 topics completed",
+  );
+  await page.reload();
+  await page
+    .locator('#complete-topic[aria-pressed="false"]')
+    .waitFor({ state: "visible" });
+  assert.equal(
+    await page.locator("#progress-label").textContent(),
+    "0 of 24 topics completed",
+  );
+
   record(
     "Complete S01E01 through the button, then reload and verify persisted course progress",
   );
@@ -328,6 +353,16 @@ try {
   );
   assert.equal(await page.locator("#complete-lesson").isDisabled(), true);
   await capture("03-completed");
+  record("Undo one topic from a completed lesson, then complete it again");
+  await page.locator("#complete-topic").click();
+  assert.equal(
+    await page.locator("#progress-label").textContent(),
+    "23 of 24 topics completed",
+  );
+  assert.equal(await page.locator("#complete-lesson").isDisabled(), false);
+  await page.locator("#complete-topic").click();
+  assert.equal(await page.locator("#complete-lesson").isDisabled(), true);
+
   await page.reload();
   await page.locator("#complete-lesson:disabled").waitFor({ state: "visible" });
   assert.equal(

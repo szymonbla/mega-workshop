@@ -344,3 +344,5 @@ main.practicing { height: calc(100dvh - 60px); padding-bottom: 8px; display: gri
 @keyframes startup-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.startup-card,.loading-orbit:before,.activity-dot,#import-steps [data-state=running]>span:first-child{animation:none!important}}
 @media(max-width:600px){.download-notice{margin:12px;flex-wrap:wrap}.download-notice button{margin-left:20px}.startup-stages{gap:10px}}
+
+#complete-topic{font-size:12px;min-height:36px}#complete-topic[aria-pressed=true]{border-color:var(--mx-ok);color:var(--mx-ok)}

@@ -129,6 +129,12 @@ function nav() {
     $("#chapters").textContent = reviewOnly
       ? "No topics to review."
       : "No results.";
+  const topicDone = state.done.includes(selection.section.id);
+  $("#complete-topic").hidden = selection.section.kind !== "topic";
+  $("#complete-topic").setAttribute("aria-pressed", String(topicDone));
+  $("#complete-topic").textContent = topicDone
+    ? "✓ Completed · Undo"
+    : "Mark topic complete";
   const { done: count, total, again, complete } = completion(lessons, state);
   $("#complete-lesson").disabled = complete || total === 0;
   $("#complete-lesson").textContent = complete
@@ -318,6 +324,24 @@ function resetKeyEditor() {
   renderKeySettings();
 }
 $("#search").oninput = nav;
+$("#complete-topic").onclick = () => {
+  if (selection.kind !== "reader" || selection.section.kind !== "topic") return;
+  const done = progress
+    .read(selection.lesson)
+    .done.includes(selection.section.id);
+  const result = progress.mark(
+    selection.lesson,
+    selection.section.id,
+    done ? "pending" : "done",
+  );
+  state = result.state;
+  nav();
+  $("#saved").textContent = result.saved
+    ? done
+      ? "Topic marked incomplete. Progress saved."
+      : "Topic completed. Progress saved."
+    : "Could not save progress in this browser. This change is kept for this session only.";
+};
 $("#complete-lesson").onclick = () => {
   if (selection.kind !== "reader") return;
   const result = progress.completeLesson(selection.lesson);
