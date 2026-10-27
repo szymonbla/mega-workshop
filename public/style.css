@@ -47,13 +47,13 @@ iframe{height:max(620px,calc(100dvh - 370px))}
 @media(max-width:760px){
  header{height:60px}
  .layout{display:block;height:auto}
- aside{max-height:210px}
+ aside{height:210px;max-height:210px}
  .aside-top{padding:12px 16px}
  .aside-top .eyebrow{display:none}
  main{padding:18px 12px 0}
  .lesson-heading{align-items:start;gap:8px}
  .counter{font-size:10px;margin-top:4px}
- .workspace{overflow:visible;min-height:50dvh}
+ .workspace{overflow:visible;min-height:100dvh}
  .reader,.practice{height:auto;overflow:visible}
  .reader article{padding:20px;font-size:15px}
  .task{margin:12px;padding:12px}
