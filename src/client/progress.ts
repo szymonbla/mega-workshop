@@ -116,6 +116,15 @@ export function createProgressStore(
     read,
     counts: (lesson: ProgressLesson) =>
       completion(lesson.sections, read(lesson)),
+    completeLesson(lesson: ProgressLesson) {
+      let saved = true;
+      for (const section of lesson.sections) {
+        if (section.kind !== "topic") continue;
+        if (!write(progressKey(lesson.id, "status", section.id), "done"))
+          saved = false;
+      }
+      return { saved, state: read(lesson) };
+    },
     visit(lesson: ProgressLesson, section: ProgressSection) {
       const saved = write(
         progressKey(lesson.id, "current-section"),

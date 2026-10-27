@@ -316,3 +316,4 @@ main.practicing { height: calc(100dvh - 60px); padding-bottom: 8px; display: gri
  .practicing .workspace-tabs { align-self: stretch; }
  .practicing h1 { font-size: 18px; }
 }
+#complete-lesson{width:100%;margin-bottom:16px}#complete-lesson:disabled{opacity:.65;cursor:default}
