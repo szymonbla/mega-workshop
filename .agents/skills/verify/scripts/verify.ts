@@ -239,12 +239,9 @@ try {
   await capture("02-topic");
   await verifyLayout(page, evidence, record, capture);
   record(
-    "Play audio, enter Practice, and verify a compact workspace without outer scrolling",
+    "Open guided example, tokenize text, reveal explanation and return to reading",
   );
   await page.locator("#audio-mini-play").click();
-  await page.waitForFunction(
-    () => !document.querySelector<HTMLAudioElement>("audio")!.paused,
-  );
   await page.locator("#tab-practice").click();
   assert.equal(await page.locator(".topic-audio").isVisible(), false);
   assert.equal(
@@ -253,48 +250,52 @@ try {
       .evaluate((audio: HTMLAudioElement) => audio.paused),
     true,
   );
-  const localLab = page.frameLocator(
+  assert.equal(await page.locator("#practice-guide li").count(), 3);
+  assert.equal(await page.locator("#lab-tabs").isVisible(), false);
+  assert.equal(
+    await page.locator("#practice-guide details").getAttribute("open"),
+    null,
+  );
+  await capture("02-example-guide");
+  await page.locator(".example-start").click();
+  const tokenLab = page.frameLocator(
     'iframe[src="/ui/tokenization-round-trip/"]',
   );
-  await localLab.locator("#text").fill("Practice without distractions 🌍");
-  await localLab
+  await tokenLab.locator("#text").fill("Saved experiment 🌍");
+  await tokenLab
     .locator("#headline-text")
     .filter({ hasText: "Decoding the IDs gives back the same text." })
     .waitFor();
-  for (const viewport of [
-    { width: 1366, height: 768 },
-    { width: 390, height: 844 },
-  ]) {
-    await page.setViewportSize(viewport);
-    await page.locator("#tab-practice").scrollIntoViewIfNeeded();
-    const geometry = await page.locator(".practice").evaluate((panel) => {
-      const frame = panel.querySelector("iframe:not([hidden])")!;
-      return {
-        overflow: panel.scrollHeight - panel.clientHeight,
-        height: frame.getBoundingClientRect().height,
-        width: document.documentElement.scrollWidth - innerWidth,
-      };
-    });
-    assert.ok(geometry.overflow <= 1, JSON.stringify(geometry));
-    assert.ok(geometry.height > 450, JSON.stringify(geometry));
-    assert.ok(geometry.width <= 1, JSON.stringify(geometry));
-    await page.locator(".task summary").click();
-    assert.equal(await page.locator("#task").isVisible(), true);
-    await page.locator(".task summary").click();
-    await capture(`02-practice-${viewport.width}`);
-  }
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.locator("#tab-read").click();
-  assert.equal(await page.locator(".topic-audio").isVisible(), true);
+  await capture("02-example-result");
+  await page.locator("#practice-guide summary").click();
+  assert.notEqual(
+    await page.locator("#practice-guide details").getAttribute("open"),
+    null,
+  );
+  await page.locator("#practice-return").click();
+  assert.equal(await page.locator("#panel-read").isVisible(), true);
   await page
     .locator('#article a[href*="/examples/tokenization-round-trip"]')
     .click();
   assert.equal(
-    await localLab.locator("#text").inputValue(),
-    "Practice without distractions 🌍",
+    await page.locator("#tab-practice").getAttribute("aria-selected"),
+    "true",
   );
-  await page.locator("#tab-read").click();
-
+  assert.equal(
+    await tokenLab.locator("#text").inputValue(),
+    "Saved experiment 🌍",
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator("#practice-guide").scrollIntoViewIfNeeded();
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
+  await capture("02-example-mobile");
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.locator("#practice-read").click();
   record("Return to overview, reload, then click Continue learning");
   await page.locator("#back-course").click();
   await page.reload();
