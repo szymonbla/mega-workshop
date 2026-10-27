@@ -407,7 +407,14 @@ test("mobile reader supports keyboard word seeking and highlight preferences", {
   assert.equal(await page.locator(".spoken-word").count(), 0);
 });
 
-test("a new browser must connect to MEGA before seeing any lesson content", async (t) => {
+test("a browser without a saved connection must connect before seeing lesson content", async (t) => {
+  // Earlier tests leave a restorable session on this shared test server.
+  const connected = await openContext(t);
+  const logout = await connected.request.post(base + "study-api/auth/logout", {
+    headers: { Origin: new URL(base).origin },
+    data: {},
+  });
+  assert.equal(logout.status(), 200);
   const context = await browser.newContext();
   t.after(() => context.close());
   const page = await context.newPage();
