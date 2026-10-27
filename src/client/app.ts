@@ -7,6 +7,7 @@ import type {
   Week,
 } from "../shared/types.ts";
 import { createAudioPlayer } from "./audio-player.ts";
+import { celebrate } from "./confetti.ts";
 import { query } from "./dom.ts";
 import { createImportUI } from "./import-ui.ts";
 import { createLabs, linkedLabs } from "./labs.ts";
@@ -342,6 +343,21 @@ $("#complete-topic").onclick = () => {
   );
   state = result.state;
   nav();
+  if (!done) {
+    const { lesson, section } = selection;
+    const lessonComplete = completion(lesson.sections, state).complete;
+    const chapterComplete = lesson.sections
+      .filter((item) => item.kind === "topic" && item.group === section.group)
+      .every((item) => state.done.includes(item.id));
+    const index = lesson.sections.indexOf(section);
+    if (index < lesson.sections.length - 1) {
+      go(index + 1);
+      $("#title").tabIndex = -1;
+      $("#title").focus({ preventScroll: true });
+    }
+    if (lessonComplete) celebrate("lesson");
+    else if (chapterComplete) celebrate("chapter");
+  }
   $("#saved").textContent = result.saved
     ? done
       ? "Topic marked incomplete. Progress saved."
@@ -350,10 +366,12 @@ $("#complete-topic").onclick = () => {
 };
 $("#complete-lesson").onclick = () => {
   if (selection.kind !== "reader") return;
+  if (progress.counts(selection.lesson).complete) return;
   const result = progress.completeLesson(selection.lesson);
   state = result.state;
   player.pause();
   nav();
+  celebrate("lesson");
   $("#saved").textContent = result.saved
     ? "Lesson completed. Progress saved in this browser."
     : "Lesson completed for this session only. Could not save progress in this browser.";

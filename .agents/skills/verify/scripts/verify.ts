@@ -396,7 +396,18 @@ try {
     await page.locator("#progress-label").textContent(),
     "1 of 24 topics completed",
   );
+  const nextTopic =
+    topics[topics.findIndex((topic) => topic.slug === "tokenization") + 1];
+  assert.equal(await page.locator("#title").textContent(), nextTopic.title);
   await page.reload();
+  await page.waitForFunction(
+    (title) => document.querySelector("#title")?.textContent === title,
+    nextTopic.title,
+  );
+  await page
+    .locator("#chapters button")
+    .filter({ hasText: "Tokenization" })
+    .click();
   await page
     .locator('#complete-topic[aria-pressed="true"]')
     .waitFor({ state: "visible" });
@@ -416,9 +427,46 @@ try {
   );
 
   record(
+    "Complete a chapter through real topic clicks and verify small confetti",
+  );
+  const chapterTopics = topics.filter(
+    (topic) =>
+      topic.kind === "topic" &&
+      topic.group ===
+        topics.find((item) => item.slug === "tokenization")!.group,
+  );
+  for (const [index, topic] of chapterTopics.entries()) {
+    await page
+      .locator("#chapters button")
+      .filter({ hasText: topic.title })
+      .click();
+    await page.locator("#complete-topic").click();
+    assert.equal(
+      await page.locator('[data-celebration="chapter"]').count(),
+      index === chapterTopics.length - 1 ? 1 : 0,
+    );
+  }
+  await capture("03-chapter-confetti");
+  await page.locator(".confetti").waitFor({ state: "detached" });
+  for (const topic of chapterTopics) {
+    await page
+      .locator("#chapters button")
+      .filter({ hasText: topic.title })
+      .click();
+    await page.locator("#complete-topic").click();
+    assert.equal(await page.locator("#title").textContent(), topic.title);
+    assert.equal(await page.locator(".confetti").count(), 0);
+  }
+  await page
+    .locator("#chapters button")
+    .filter({ hasText: "Tokenization" })
+    .click();
+
+  record(
     "Complete S01E01 through the button, then reload and verify persisted course progress",
   );
   await page.locator("#complete-lesson").click();
+  await page.locator('[data-celebration="lesson"]').waitFor();
   assert.equal(
     await page.locator("#progress-label").textContent(),
     "24 of 24 topics completed",
@@ -434,6 +482,11 @@ try {
   assert.equal(await page.locator("#complete-lesson").isDisabled(), false);
   await page.locator("#complete-topic").click();
   assert.equal(await page.locator("#complete-lesson").isDisabled(), true);
+  await page.locator('[data-celebration="lesson"]').waitFor();
+  await page
+    .locator("#chapters button")
+    .filter({ hasText: "Tokenization" })
+    .click();
 
   await page.reload();
   await page.locator("#complete-lesson:disabled").waitFor({ state: "visible" });
@@ -447,6 +500,14 @@ try {
     ),
     "done",
   );
+  record("Reduced motion keeps completion functional without confetti");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.locator("#complete-topic").click();
+  await page.locator("#complete-topic").click();
+  assert.equal(await page.locator("#complete-lesson").isDisabled(), true);
+  assert.equal(await page.locator(".confetti").count(), 0);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.locator("#chapters button").filter({ hasText: "Tokenization" }).click();
   await page.locator("#back-course").click();
   assert.match(
     await page.locator('[data-course="s01e01"]').innerText(),

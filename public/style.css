@@ -374,3 +374,17 @@ main .workspace { min-height: 100dvh; }
 .practice-finish{padding:16px 24px}
 .practice-finish p{display:none}
 @media(max-width:760px){.practice-intro{padding:12px;align-items:flex-start;flex-direction:column;gap:4px}.practice-guide{margin:12px}.practice .lab-toolbar{padding:12px 12px 0}.example-workspace{margin:0 12px}.practice-finish{padding:12px}}
+/* Celebration overlays never intercept reading or navigation. */
+.confetti {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  overflow: hidden;
+}
+.confetti span {
+  position: absolute;
+  top: 0;
+  width: 7px;
+  height: 11px;
+}
