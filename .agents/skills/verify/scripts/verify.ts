@@ -307,6 +307,13 @@ try {
       (await context!.request.get(new URL(path, base).href)).status(),
       200,
     );
+  for (const image of await page.locator("#article img").all()) {
+    await image.scrollIntoViewIfNeeded();
+    await image.evaluate(async (element) => {
+      await (element as HTMLImageElement).decode();
+    });
+  }
+  await page.locator("#title").scrollIntoViewIfNeeded();
   await page.waitForFunction(() =>
     [...document.querySelectorAll<HTMLImageElement>("#article img")].every(
       (image) => image.complete && image.naturalWidth > 0,
@@ -360,7 +367,42 @@ try {
     'iframe[src="/study-labs/s01e02/ui/context-self-report/"]',
   );
   await lab.getByText("The agent's context", { exact: true }).waitFor();
+  record(
+    "Verify the exercise fits its content and wheel scrolling moves the page",
+  );
+  await page.waitForFunction(() => {
+    const frame = document.querySelector<HTMLIFrameElement>(
+      "#lab-host iframe:not([hidden])",
+    )!;
+    return (
+      frame.clientHeight >=
+      frame.contentDocument!.documentElement.scrollHeight - 2
+    );
+  });
+  await lab.getByText("The agent's context", { exact: true }).hover();
+  const scrollBefore = await page.evaluate(() => scrollY);
+  await page.mouse.wheel(0, 500);
+  await page.waitForFunction((before) => scrollY > before + 100, scrollBefore);
   await capture("07-imported-exercise");
+  record("Check Practice at phone width without horizontal page overflow");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator("#tab-practice").scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => {
+    const frame = document.querySelector<HTMLIFrameElement>(
+      "#lab-host iframe:not([hidden])",
+    )!;
+    return (
+      frame.clientHeight >=
+      frame.contentDocument!.documentElement.scrollHeight - 2
+    );
+  });
+  assert.ok(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  );
+  await capture("07-mobile-practice");
+  await page.setViewportSize({ width: 1440, height: 1000 });
   record("Open pending lesson import form and reject a non-MEGA URL");
   await page.locator("#back-course").click();
   await page.locator('[data-course="s02e03"]').click();

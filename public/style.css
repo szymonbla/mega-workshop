@@ -234,3 +234,58 @@ progress::-webkit-progress-bar{background:var(--mega-line)}progress::-webkit-pro
 #lesson-import{width:min(620px,calc(100% - 32px));max-height:85dvh;overflow:auto}#import-form{display:grid;gap:12px}#import-form[hidden]{display:none}#import-steps{list-style:none;padding:0;margin:20px 0}#import-steps li{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid var(--mega-line)}#import-steps li>span:first-child{width:18px}#import-steps small{display:block;color:var(--mega-ink-muted)}#import-steps [data-state=done]>span:first-child{color:var(--mx-ok)}#import-steps [data-state=running]{color:var(--study-accent)}#import-steps [data-state=failed]{color:var(--mega-code-red)}#import-message{min-height:24px}#import-open{display:inline-block;padding:9px 13px}#import-open[hidden]{display:none}#import-disconnect{display:block;margin-top:24px}#import-disconnect[hidden]{display:none}#pending-import{margin:16px 12px 16px 0}@media(max-width:650px){header{height:auto;min-height:76px;flex-wrap:wrap;padding:12px}.header-actions{flex-wrap:wrap}#import-button{font-size:11px}}
 
 #lesson-transcript{display:inline-block;margin-right:16px;font-size:12px}#lesson-transcript[hidden]{display:none}
+
+/* The document owns scrolling; only the topic outline scrolls independently. */
+:root{--mx-control-radius:6px;--mx-control-shadow:0 1px 2px #0001;--mega-focus:var(--mega-blue-text)}
+.layout{height:auto;min-height:calc(100dvh - 60px);align-items:start;grid-template-columns:256px minmax(0,1fr)}
+.layout>aside{position:sticky;top:0;height:100dvh;max-height:none}
+main{padding:28px clamp(20px,3vw,56px) 48px;width:100%;max-width:1440px;margin-inline:auto}
+.lesson-heading{align-items:flex-start;margin-bottom:20px;gap:24px}
+.lesson-heading>div{min-width:0}
+.lesson-heading>div:last-child{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px;padding-top:8px}
+#lesson-transcript{margin:0}
+h1{font-size:clamp(24px,2.4vw,34px);line-height:1.25;letter-spacing:-.025em;overflow-wrap:anywhere}
+.workspace{overflow:visible;flex:none;min-height:0}
+.reader,.practice{height:auto;overflow:visible}
+.workspace-tabs{margin:16px 0}
+.reader article{max-width:80ch;padding:32px clamp(20px,4vw,56px) 48px;font-size:17px;line-height:1.85;overflow-wrap:anywhere}
+.reader article>:first-child{margin-top:0}
+.reader article h2{margin:36px 0 16px;font-weight:600;line-height:1.35}
+.reader article h3,.reader article h4{margin:28px 0 12px;line-height:1.4;color:var(--mega-ink)}
+.reader article>ul,.reader article>ol{padding-left:1.5em}
+.reader article li>p{margin-bottom:10px}
+.reader article img{width:auto;max-width:100%;height:auto;margin:24px auto;border-radius:6px}
+.reader article pre{max-width:100%;overflow:auto;padding:18px 20px;background:var(--mega-code-bg);border:1px solid var(--mega-line);border-radius:6px;line-height:1.65}
+.reader article pre code{padding:0;background:none;font-size:13px;overflow-wrap:normal}
+.reader article blockquote{margin:24px 0;padding:4px 20px;border-left:3px solid var(--mega-line-strong);color:var(--mega-ink-muted)}
+.reader article blockquote p:last-child{margin-bottom:0}
+.reader article table{display:block;max-width:100%;overflow:auto;border-collapse:collapse;margin:24px 0;font-size:14px}
+.reader article th,.reader article td{padding:10px 14px;border:1px solid var(--mega-line);text-align:left}
+.practice>.pane-label{display:none}
+.task{margin:24px 24px 20px;padding:16px 20px;background:var(--mega-surface);border-left:3px solid var(--mega-red)}
+.lab-toolbar{gap:16px;padding:0 24px 20px;align-items:flex-start}
+#lab-tabs{gap:8px}
+#lab-tabs button{padding:8px 12px;line-height:1.5;text-align:left}
+#lab-host{padding:0 24px 24px}
+#lab-host iframe{height:640px;border-radius:6px}
+.topic-audio{border:1px solid var(--mega-line);border-radius:8px;padding:8px 12px}
+.audio-controls{display:grid;margin-top:0;grid-template-columns:auto auto minmax(0,1fr) auto auto;grid-template-areas:'play now seek end speed'}
+#audio-speed{padding:0 32px 0 12px}
+.audio-box{height:32px;min-height:32px}
+@container(max-width:540px){.audio-controls{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:'play speed speed' 'now seek end'}}
+@media(max-width:760px){
+ header{height:auto;min-height:60px;flex-wrap:wrap;padding:12px 16px}
+ .header-actions{flex-wrap:wrap}
+ .layout{display:block;min-height:0}
+ .layout>aside{position:static;height:auto;max-height:240px}
+ .layout>aside nav{min-height:80px;max-height:140px}
+ main{padding:24px 16px 32px}
+ .lesson-heading{flex-direction:column;gap:8px}
+ .lesson-heading>div:last-child{padding:0;justify-content:flex-start}
+ .workspace{min-height:0}
+ .workspace-tabs{align-self:stretch}
+ .reader article{font-size:16px;padding:24px 20px 32px}
+ .task{margin:16px;padding:14px 16px}
+ .lab-toolbar{padding:0 16px 16px;flex-wrap:wrap}
+ #lab-host{padding:0 12px 16px}
+}

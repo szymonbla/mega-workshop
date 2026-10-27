@@ -12,6 +12,39 @@ export function createLabs({
 }) {
   const document = host.ownerDocument;
   const frames = new Map<string, HTMLIFrameElement>();
+  const observers = new Map<HTMLIFrameElement, ResizeObserver>();
+  function fitFrame(frame: HTMLIFrameElement) {
+    observers.get(frame)?.disconnect();
+    // Labs are served locally. Leave cross-origin documents at the fallback height.
+    try {
+      const content = frame.contentDocument;
+      if (!content?.body) return;
+      const style = content.createElement("style");
+      style.textContent =
+        "html,body{height:auto!important;min-height:0!important}";
+      content.head.append(style);
+      const resize = () => {
+        if (!frame.getClientRects().length) return;
+        const body = content.body;
+        const height = Math.ceil(
+          Math.max(body.scrollHeight, body.getBoundingClientRect().height) +
+            parseFloat(getComputedStyle(body).marginTop || "0") +
+            parseFloat(getComputedStyle(body).marginBottom || "0"),
+        );
+        frame.style.height = `${Math.max(320, height)}px`;
+      };
+      const observer = new ResizeObserver(resize);
+      observer.observe(content.body);
+      observers.set(frame, observer);
+      resize();
+    } catch {}
+  }
+  function clearFrames() {
+    for (const observer of observers.values()) observer.disconnect();
+    observers.clear();
+    for (const frame of frames.values()) frame.remove();
+    frames.clear();
+  }
   let items: LabItem[] = [],
     section: Section | null = null,
     selected = "";
@@ -60,7 +93,10 @@ export function createLabs({
         ? `${base}/ui/${name}/`
         : `${base}/index.html#/${name}`;
       frame.loading = "eager";
-      frame.addEventListener("load", () => themeFrame(frame, getTheme()));
+      frame.addEventListener("load", () => {
+        themeFrame(frame, getTheme());
+        fitFrame(frame);
+      });
       frames.set(frameKey, frame);
       host.append(frame);
     }
@@ -75,13 +111,11 @@ export function createLabs({
       for (const frame of frames.values()) themeFrame(frame, theme);
     },
     clear() {
-      for (const frame of frames.values()) frame.remove();
-      frames.clear();
+      clearFrames();
       section = null;
     },
     reset() {
-      for (const frame of frames.values()) frame.remove();
-      frames.clear();
+      clearFrames();
       if (section) select(section, selected);
     },
   };

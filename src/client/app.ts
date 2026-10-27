@@ -151,6 +151,8 @@ function showPanel(name: string) {
     $(`#tab-${panel}`).tabIndex = selected ? 0 : -1;
   }
   player.refresh();
+  if ($(".workspace-tabs").getBoundingClientRect().bottom < 0)
+    $(".workspace-tabs").scrollIntoView({ block: "start" });
 }
 for (const name of ["read", "practice"])
   $("#tab-" + name).onclick = () => showPanel(name);
@@ -232,6 +234,7 @@ function renderSection(next: Exclude<Selection, { kind: "overview" }>) {
   labs.select(section);
   showPanel("read");
   nav();
+  window.scrollTo({ top: 0, behavior: "instant" });
   $(".reader").scrollTop = 0;
   $(".practice").scrollTop = 0;
 }
