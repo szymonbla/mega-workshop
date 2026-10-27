@@ -1,0 +1,52 @@
+import assert from "node:assert/strict";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import test from "node:test";
+import { loadCurriculum } from "../src/server/curriculum.ts";
+import { writeFixture } from "./fixtures/synthetic.ts";
+
+test("four weeks, twenty unique lessons and unchanged original topic keys", (t) => {
+  const baseline = mkdtempSync(join(tmpdir(), "mega-curriculum-baseline-"));
+  t.after(() => rmSync(baseline, { recursive: true, force: true }));
+  writeFixture(baseline);
+  const weeks = loadCurriculum(baseline);
+  assert.deepEqual(
+    weeks.map((w) => w.lessons.length),
+    [5, 5, 5, 5],
+  );
+  const lessons = weeks.flatMap((w) => w.lessons);
+  assert.equal(new Set(lessons.map((l) => l.id)).size, 20);
+  assert.deepEqual(
+    lessons.map((l) => l.number),
+    Array.from({ length: 20 }, (_, i) => i + 1),
+  );
+  assert.equal(lessons[0].sections[1].id, "first");
+  assert.equal(lessons[0].sections.filter((s) => s.kind === "topic").length, 2);
+  assert.equal(lessons.filter((l) => l.available).length, 1);
+  assert.ok(lessons.slice(1).every((l) => !l.sections.length));
+});
+test("adding another lesson activates only its slot, with unique stable section keys", (t) => {
+  const dir = mkdtempSync(join(tmpdir(), "mega-curriculum-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  writeFixture(dir);
+  rmSync(join(dir, "article.md"));
+  mkdirSync(join(dir, "content", "s02e03"), { recursive: true });
+  writeFileSync(
+    join(dir, "content", "s02e03", "article.md"),
+    "<!-- section: first-idea -->\n## First idea\nText.\n<!-- section: first-idea-2 -->\n## First idea\nAnother text.",
+  );
+  const lessons = loadCurriculum(dir, (s) => `rendered:${s}`).flatMap(
+    (w) => w.lessons,
+  );
+  const available = lessons.filter((l) => l.available);
+  assert.equal(available.length, 1);
+  assert.equal(available[0].id, "s02e03");
+  assert.deepEqual(
+    available[0].sections.map((s) => s.id),
+    ["first-idea", "first-idea-2"],
+  );
+  assert.ok(
+    available[0].sections.every((s) => s.html?.startsWith("rendered:")),
+  );
+});

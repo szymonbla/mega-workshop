@@ -9,21 +9,21 @@ Read [the feature map](features/README.md) first. This skill covers the root `me
 
 ## Launch
 
-From the workspace root, use Node >=22.18. When dependencies are missing, run `npm run setup` (downloads dependencies). For Chromium run `npx playwright install chromium` once; this also downloads files. Alternatively use the installed Google Chrome via `BROWSER_CHANNEL=chrome`. Neither setup command is an offline operation.
+From the workspace root, use Node >=24. When dependencies are missing, run `npm run setup` (downloads dependencies). For Chromium run `npx playwright install chromium` once; this also downloads files. Alternatively use the installed Google Chrome via `BROWSER_CHANNEL=chrome`. Neither setup command is an offline operation.
 
 Run the isolated authentication, navigation and imported-lesson proof:
 
 ```sh
-BROWSER_CHANNEL=chrome .agents/skills/verify/scripts/verify.mjs
+BROWSER_CHANNEL=chrome npm run verify
 ```
 
 Without installed Chrome, after installing Chromium:
 
 ```sh
-.agents/skills/verify/scripts/verify.mjs
+npm run verify
 ```
 
-The executable helper launches `scripts/server.mjs`, which calls the production `startStudy` function with a test substitute for the external MEGA authentication service, with `PORT=0` and a unique temporary `MEX_ENV_FILE`, removes inherited OpenAI/OpenRouter keys, and reads the actual URL from `MEGA Workshop → http://localhost:<port>/`. It does not read or change the user's `.env`. No real MEGA login is performed. The helper clicks the actual login and connection controls against the test substitute. It requires locally stored, Git-ignored S01E01 files and an already imported S01E02 with its repository. Missing S01E02 is a failed prerequisite, not permission to fabricate its content. Its session and import-job state stay under scratch; it never opens the user’s MEGA browser profile. Ready means the catalog includes Tokenization and the browser renders the 20 course cards, not just an open socket.
+`npm run verify` builds browser assets first. The executable helper launches `scripts/server.ts`, which calls the production `startStudy` function with a test substitute for the external MEGA authentication service, with `PORT=0` and a unique temporary `MEX_ENV_FILE`, removes inherited OpenAI/OpenRouter keys, and reads the actual URL from `MEGA Workshop → http://localhost:<port>/`. It does not read or change the user's `.env`. No real MEGA login is performed. The helper clicks the actual login and connection controls against the test substitute. It requires locally stored, Git-ignored S01E01 files and an already imported S01E02 with its repository. Missing S01E02 is a failed prerequisite, not permission to fabricate its content. Its session and import-job state stay under scratch; it never opens the user’s MEGA browser profile. Ready means the catalog includes Tokenization and the browser renders the 20 course cards, not just an open socket.
 
 The helper owns the server and browser until its `finally` cleanup. Runs can coexist: each gets an OS-assigned port, temporary configuration, empty browser context and unique evidence directory. Do not drive an existing user instance on port 4830. Run this helper in the foreground and let it finish, including on assertion failure; do not abandon its process.
 
@@ -35,7 +35,7 @@ If an action fails, inspect `server.log`, `doctor.json` and `report.json` before
 
 ## Drive
 
-Use the existing Playwright workflow documented in the root README and `study/browser/app.test.mjs`. The helper uses the same server isolation and browser library. No collaborative-browser dependency is required for this documented repository workflow.
+Use the existing Playwright workflow documented in the root README and `test/browser/app.test.ts`. The helper uses the same server isolation and browser library. No collaborative-browser dependency is required for this documented repository workflow.
 
 The helper proves anonymous denial, login controls, automatic synchronization on connection and reload (using two already-local lessons), course-card navigation, topic selection, resume, pending return, imported S01E02 images/transcript/audio/word seeking/exercise loading, invalid-link rejection, and logout denial. It does not verify real MEGA email login, a fresh remote import, or paid exercises. Exact selectors and assertions are in [navigation](features/navigation.md). For additional journeys, extend the helper's `try` body using the feature recipes, retaining its launch/doctor/evidence/finally lifecycle. `page`, `context`, `base`, `scratch`, `capture(name)` and `record(action)` are available there. Do not replace real clicks with internal state setters.
 
@@ -55,4 +55,4 @@ The helper saves the browser trace, closes its browser, terminates only its chil
 
 ## Helpers
 
-`scripts/verify.mjs` is executable; both invocations above run launch → anonymous denial → login UI → doctor → browser journeys → capture → cleanup. A nonzero exit means failed proof or cleanup. It is intentionally one feature proof, not a claim that every mapped feature passes. Read the matching feature file before adding coverage. Use `/maintain-verification-skill` when app changes require updating this map.
+`scripts/verify.ts` is executable; both invocations above run launch → anonymous denial → login UI → doctor → browser journeys → capture → cleanup. A nonzero exit means failed proof or cleanup. It is intentionally one feature proof, not a claim that every mapped feature passes. Read the matching feature file before adding coverage. Use `/maintain-verification-skill` when app changes require updating this map.

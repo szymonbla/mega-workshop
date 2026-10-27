@@ -27,7 +27,7 @@ Keep the server running while lessons are being prepared. Closing the import pan
 
 ## Quick start
 
-You need Node.js 22.18 or later.
+You need Node.js 24 or later.
 
 ```sh
 git clone https://github.com/szymonbla/mega-workshop.git
@@ -75,13 +75,26 @@ Share the code through Git or an archive made with `git archive`. A ZIP of the w
 
 ## Development and checks
 
-The app uses a Node.js server and plain browser JavaScript. To run the checks:
+The app uses TypeScript 7.0.2 with its native Go compiler for strict type checking, native Node.js execution on the server, and esbuild for browser modules. `npm run typecheck` invokes the native compiler through `tsc --noEmit`; npm installs the platform binary, so a separate Go installation is not required. Biome formats and checks the TypeScript code. The structure follows the small, explicit modules used in [Limen](https://github.com/overment/limen/tree/main/src).
+
+- `src/server/`: HTTP server, course catalog, imports, audio and exercise workers.
+- `src/client/`: browser UI, navigation, progress and audio playback.
+- `src/shared/`: shared domain and API types.
+- `public/`: HTML and CSS sources.
+- `test/`: unit and integration tests, fixtures and browser regressions.
+- `scripts/`: build, development runner, content audit and Python audio alignment tools.
+- `dist/public/`: generated browser assets, excluded from Git.
+
+`npm start` builds browser assets and starts the server. `npm run dev` rebuilds frontend modules and static assets when edited and restarts the server on server changes; reload the browser to see frontend changes. `npm run build` only generates browser assets. Node executes server `.ts` files directly, so there is no separate server compilation step.
+
+To run the checks:
 
 ```sh
-npm test
-npm run audit:content
-python3 -m unittest discover -s study -p 'test_*.py'
+npm run check
+npm run test:audio
 ```
+
+Use `npm run format` to format code, `npm run lint` for Biome checks, and `npm run typecheck` for TypeScript checking. Python remains necessary only for the MLX/stable-ts audio integration.
 
 GitHub Actions runs these checks on pushes and pull requests. Tests use synthetic course data.
 
@@ -90,7 +103,9 @@ The content audit checks tracked files and files that could be added to Git. It 
 Full browser verification requires a local library with the first two lessons and the exercise installation:
 
 ```sh
-BROWSER_CHANNEL=chrome .agents/skills/verify/scripts/verify.mjs
+BROWSER_CHANNEL=chrome npm run verify
 ```
 
 See the [browser verification instructions](.agents/skills/verify/SKILL.md) for details. This check uses an isolated session, makes no paid model calls, and saves its output under `.study-data/.audit/`.
+
+Existing `.study-data/` files and browser storage keys need no migration. Set `STUDY_DATA_HOME` to an existing data directory when verifying from a separate worktree.

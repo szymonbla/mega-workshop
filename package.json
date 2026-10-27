@@ -3,20 +3,35 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node study/server.mjs",
+    "start": "npm run build && node src/server/server.ts",
+    "dev": "node scripts/dev.ts",
     "setup": "npm install",
-    "test": "node --test study/*.test.mjs",
-    "test:browser": "node --test study/browser/*.test.mjs",
+    "build": "node scripts/build.ts",
+    "typecheck": "tsc --noEmit",
+    "format": "biome format --write .",
+    "lint": "biome check .",
+    "check": "npm run typecheck && npm run lint && npm test && npm run audit:content",
+    "test": "npm run build && node --test test/*.test.ts",
+    "test:browser": "npm run build && node --test test/browser/*.test.ts",
     "setup:import": "playwright install chromium",
-    "audit:content": "node scripts/audit-content.mjs"
+    "audit:content": "node scripts/audit-content.ts",
+    "test:audio": "python3 -m unittest discover -s scripts/audio -p 'test_*.py'",
+    "verify": "npm run build && node .agents/skills/verify/scripts/verify.ts"
   },
   "engines": {
-    "node": ">=22.18"
+    "node": ">=24"
   },
   "dependencies": {
     "linkedom": "^0.18.14",
     "marked": "16.4.2",
-    "sanitize-html": "^2.18.1",
-    "playwright": "1.59.1"
+    "playwright": "1.59.1",
+    "sanitize-html": "^2.18.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.3",
+    "@types/node": "^24.19.2",
+    "@types/sanitize-html": "^2.16.2",
+    "esbuild": "^0.28.2",
+    "typescript": "7.0.2"
   }
 }

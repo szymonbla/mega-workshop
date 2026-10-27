@@ -26,3 +26,5 @@ study/alignment/
 study/public/audio/
 study/public/figures/
 .audit/
+
+/dist/
