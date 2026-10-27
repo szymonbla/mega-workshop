@@ -128,7 +128,11 @@ function nav() {
     $("#chapters").textContent = reviewOnly
       ? "No topics to review."
       : "No results.";
-  const { done: count, total, again } = completion(lessons, state);
+  const { done: count, total, again, complete } = completion(lessons, state);
+  $("#complete-lesson").disabled = complete || total === 0;
+  $("#complete-lesson").textContent = complete
+    ? "✓ Lesson completed"
+    : "Complete lesson";
   $("#bar").style.width = `${total ? (count / total) * 100 : 0}%`;
   $("#progress-label").textContent = `${count} of ${total} topics completed`;
   $("#review").textContent = reviewOnly
@@ -246,6 +250,16 @@ async function status() {
     : "Add an API key";
 }
 $("#search").oninput = nav;
+$("#complete-lesson").onclick = () => {
+  if (selection.kind !== "reader") return;
+  const result = progress.completeLesson(selection.lesson);
+  state = result.state;
+  player.pause();
+  nav();
+  $("#saved").textContent = result.saved
+    ? "Lesson completed. Progress saved in this browser."
+    : "Lesson completed for this session only. Could not save progress in this browser.";
+};
 $("#review").onclick = () => {
   reviewOnly = !reviewOnly;
   nav();

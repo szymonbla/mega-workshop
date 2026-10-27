@@ -23,6 +23,7 @@ interface AppElements {
   "#lesson-context": HTMLElementTagNameMap["p"];
   "#bar": HTMLElementTagNameMap["div"];
   "#progress-label": HTMLElementTagNameMap["p"];
+  "#complete-lesson": HTMLElementTagNameMap["button"];
   "#search": HTMLElementTagNameMap["input"];
   "#review": HTMLElementTagNameMap["button"];
   "#chapters": HTMLElementTagNameMap["nav"];

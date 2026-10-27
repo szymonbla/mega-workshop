@@ -261,6 +261,36 @@ try {
     JSON.stringify(storage, null, 2),
   );
   await capture("03-resumed");
+  record(
+    "Complete S01E01 through the button, then reload and verify persisted course progress",
+  );
+  await page.locator("#complete-lesson").click();
+  assert.equal(
+    await page.locator("#progress-label").textContent(),
+    "24 of 24 topics completed",
+  );
+  assert.equal(await page.locator("#complete-lesson").isDisabled(), true);
+  await capture("03-completed");
+  await page.reload();
+  await page.locator("#complete-lesson:disabled").waitFor({ state: "visible" });
+  assert.equal(
+    await page.locator("#progress-label").textContent(),
+    "24 of 24 topics completed",
+  );
+  assert.equal(
+    await page.evaluate(() =>
+      localStorage.getItem("mega-study-v2:s01e01:status:step-4"),
+    ),
+    "done",
+  );
+  await page.locator("#back-course").click();
+  assert.match(
+    await page.locator('[data-course="s01e01"]').innerText(),
+    /Completed/,
+  );
+  assert.equal(await page.locator("#course-count").textContent(), "1 / 20");
+  await capture("03-completed-overview");
+  await page.locator('[data-course="s01e01"]').click();
   record("Open pending S02E03, then Continue available lesson");
   await page.locator("#back-course").click();
   await page.locator('[data-course="s02e03"]').click();
