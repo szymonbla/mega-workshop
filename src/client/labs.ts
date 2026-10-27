@@ -60,7 +60,18 @@ export function createLabs({
         ? `${base}/ui/${name}/`
         : `${base}/index.html#/${name}`;
       frame.loading = "eager";
-      frame.addEventListener("load", () => themeFrame(frame, getTheme()));
+      frame.addEventListener("load", () => {
+        themeFrame(frame, getTheme());
+        // Some labs disable document scrolling when embedded. Practice supplies
+        // a viewport-sized frame, so its content must remain reachable.
+        try {
+          const content = frame.contentDocument;
+          if (!content) return;
+          const style = content.createElement("style");
+          style.textContent = "html{overflow-y:auto!important}";
+          content.head.append(style);
+        } catch {}
+      });
       frames.set(frameKey, frame);
       host.append(frame);
     }

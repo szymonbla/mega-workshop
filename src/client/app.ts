@@ -10,6 +10,7 @@ import { createAudioPlayer } from "./audio-player.ts";
 import { query } from "./dom.ts";
 import { createImportUI } from "./import-ui.ts";
 import { createLabs } from "./labs.ts";
+import { linkLabel } from "./link-labels.ts";
 import type { Selection } from "./navigation.ts";
 import { resolveRoute, selectSection } from "./navigation.ts";
 import { completion, createProgressStore } from "./progress.ts";
@@ -153,6 +154,8 @@ function showPanel(name: string) {
   $("main").classList.toggle("practicing", name === "practice");
   if (name === "practice") player.pause();
   player.refresh();
+  if ($(".workspace-tabs").getBoundingClientRect().bottom < 0)
+    $(".workspace-tabs").scrollIntoView({ block: "start" });
 }
 for (const name of ["read", "practice"])
   $("#tab-" + name).onclick = () => showPanel(name);
@@ -209,7 +212,18 @@ function renderSection(next: Exclude<Selection, { kind: "overview" }>) {
         /github\.com\/MEGA-DOT-DEV\/examples\/tree\/main\/(?:examples|tools)\/([a-z0-9-]+)/.exec(
           link.href,
         );
-      if (match && hasPractice(section)) {
+      const practice = Boolean(
+        match && hasPractice(section) && section.labs.includes(match[1]),
+      );
+      const badge = document.createElement("span");
+      badge.className = "link-badge";
+      badge.textContent = linkLabel(
+        link.href,
+        link.textContent || "",
+        practice,
+      );
+      link.append(" ", badge);
+      if (match && practice) {
         link.addEventListener("click", (event) => {
           event.preventDefault();
           labs.select(section, match[1]);
@@ -234,6 +248,7 @@ function renderSection(next: Exclude<Selection, { kind: "overview" }>) {
   labs.select(section);
   showPanel("read");
   nav();
+  window.scrollTo({ top: 0, behavior: "instant" });
   $(".reader").scrollTop = 0;
   $(".practice").scrollTop = 0;
 }
