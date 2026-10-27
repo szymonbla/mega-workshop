@@ -238,7 +238,9 @@ export function createImportUI({
     },
     async initialize() {
       try {
-        const status = await api<{ authenticated: boolean }>("auth/status");
+        let status = await api<{ authenticated: boolean }>("auth/status");
+        if (!status.authenticated)
+          status = await api<{ authenticated: boolean }>("auth/restore", {});
         if (status.authenticated) await connected();
         else lock();
       } catch (error) {
@@ -252,8 +254,8 @@ export function createImportUI({
           try {
             const status = await api<{ authenticated: boolean }>("auth/status");
             if (!status.authenticated) lock();
-          } catch {
-            lock();
+          } catch (error) {
+            message(errorMessage(error));
           }
         }
       }, 3000);
