@@ -368,3 +368,18 @@ main.practicing { height: calc(100dvh - 60px); padding-bottom: 8px; display: gri
 .practice-finish{padding:24px 28px 32px;max-width:860px}
 @media(max-width:760px){.practice-intro{padding:20px 12px}.practice .lab-toolbar{padding:0 12px}.practice-guide{margin:18px 12px;padding:18px 14px}.example-workspace{margin:0 12px}.practice-finish{padding:20px 12px}.practice-guide details{margin-left:0}}
 .example-start{margin-top:20px;min-height:40px}
+/* Keep context compact and put the actual example directly below it. */
+.practice-intro{max-width:none;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--mega-line)}
+.practice-intro p{margin:0;font-size:13px}
+.practice-guide{margin:16px 24px;padding:0;border:0;background:none;max-width:none}
+.practice-guide h3{margin:0 0 8px;font-size:18px}
+.practice-guide>.practice-instructions{margin:0;font-size:13px}
+.practice-instructions>summary{color:var(--mega-ink-muted)}
+.practice-instructions>ol{padding:16px;background:var(--mega-surface);border-radius:8px;max-width:860px}
+.practice .lab-toolbar{padding:12px 24px 0}
+.example-workspace{margin:0 24px}
+.example-workspace>.pane-label{display:none}
+.practicing #lab-host iframe,#lab-host iframe{height:var(--lab-height,640px)}
+.practice-finish{padding:16px 24px}
+.practice-finish p{display:none}
+@media(max-width:760px){.practice-intro{padding:12px;align-items:flex-start;flex-direction:column;gap:4px}.practice-guide{margin:12px}.practice .lab-toolbar{padding:12px 12px 0}.example-workspace{margin:0 12px}.practice-finish{padding:12px}}

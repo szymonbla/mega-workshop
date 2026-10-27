@@ -9,7 +9,7 @@ import type {
 import { createAudioPlayer } from "./audio-player.ts";
 import { query } from "./dom.ts";
 import { createImportUI } from "./import-ui.ts";
-import { createLabs } from "./labs.ts";
+import { createLabs, linkedLabs } from "./labs.ts";
 import { linkLabel } from "./link-labels.ts";
 import type { Selection } from "./navigation.ts";
 import { resolveRoute, selectSection } from "./navigation.ts";
@@ -556,6 +556,8 @@ async function loadCourse() {
     );
     weeks = curriculum.weeks;
     courseLessons = weeks.flatMap((week) => week.lessons);
+    for (const lesson of courseLessons)
+      for (const section of lesson.sections) section.labs = linkedLabs(section);
     labs.setItems([...items, ...importedItems]);
     route();
     status().catch(() => {

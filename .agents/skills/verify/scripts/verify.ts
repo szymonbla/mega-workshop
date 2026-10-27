@@ -250,11 +250,11 @@ try {
   assert.equal(await page.locator("#practice-guide li").count(), 3);
   assert.equal(await page.locator("#lab-tabs").isVisible(), false);
   assert.equal(
-    await page.locator("#practice-guide details").getAttribute("open"),
+    await page.locator(".practice-instructions").getAttribute("open"),
     null,
   );
   await capture("02-example-guide");
-  await page.locator(".example-start").click();
+  await page.locator(".practice-instructions > summary").click();
   const tokenLab = page.frameLocator(
     'iframe[src="/ui/tokenization-round-trip/"]',
   );
@@ -264,9 +264,9 @@ try {
     .filter({ hasText: "Decoding the IDs gives back the same text." })
     .waitFor();
   await capture("02-example-result");
-  await page.locator("#practice-guide summary").click();
+  await page.locator(".practice-instructions details > summary").click();
   assert.notEqual(
-    await page.locator("#practice-guide details").getAttribute("open"),
+    await page.locator(".practice-instructions").getAttribute("open"),
     null,
   );
   await page.locator("#practice-return").click();
@@ -293,6 +293,74 @@ try {
   await capture("02-example-mobile");
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.locator("#practice-read").click();
+  record("Verify a topic without example links shows only reading");
+  const practiceCatalog = (await (
+    await context!.request.get(base + "study-api/curriculum")
+  ).json()) as Curriculum;
+  const topics = practiceCatalog.weeks
+    .flatMap((week) => week.lessons)
+    .find((lesson) => lesson.id === "s01e01")!.sections;
+  const readOnly = topics.find(
+    (topic) => topic.kind === "topic" && !topic.labs.length,
+  )!;
+  assert.ok(readOnly);
+  await page
+    .locator("#chapters button")
+    .filter({ hasText: readOnly.title })
+    .click();
+  assert.equal(await page.locator("#tab-practice").isVisible(), false);
+  assert.equal(await page.locator("#panel-practice").isVisible(), false);
+  assert.equal(await page.locator("#panel-read").isVisible(), true);
+  await capture("02-read-only");
+  record(
+    "Inspect the API request form on desktop and mobile without sending a request",
+  );
+  const requestTopic = topics.find((topic) =>
+    topic.labs.includes("responses-request"),
+  )!;
+  assert.ok(requestTopic);
+  await page
+    .locator("#chapters button")
+    .filter({ hasText: requestTopic.title })
+    .click();
+  await page.locator("#tab-practice").click();
+  const requestLab = page.frameLocator('iframe[src="/ui/responses-request/"]');
+  await requestLab
+    .locator('link[href="/study/lab.css"]')
+    .waitFor({ state: "attached" });
+  await requestLab
+    .locator("#prompt")
+    .fill("Explain one useful application of language models.");
+  for (const viewport of [
+    { width: 1440, height: 1000 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await requestLab.locator("#prompt").scrollIntoViewIfNeeded();
+    await requestLab.locator(".mx-page").evaluate(async () => {
+      await document.fonts.ready;
+    });
+    assert.equal(
+      await requestLab
+        .locator("body")
+        .evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      true,
+    );
+    const padding = await requestLab
+      .locator(".mx-page")
+      .evaluate((element) => parseFloat(getComputedStyle(element).paddingLeft));
+    assert.ok(padding >= 12);
+    await capture(`02-request-${viewport.width}`);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.locator("#theme-toggle").click();
+  await requestLab.locator('html[data-theme="light"]').waitFor();
+  await capture("02-request-light");
+  await page.locator("#theme-toggle").click();
+  await page
+    .locator("#chapters button")
+    .filter({ hasText: "Tokenization" })
+    .click();
   record("Return to overview, reload, then click Continue learning");
   await page.locator("#back-course").click();
   await page.reload();
@@ -491,7 +559,7 @@ try {
   );
   await lab.getByText("The agent's context", { exact: true }).waitFor();
   record(
-    "Verify wheel scrolling moves the exercise inside the fitted Practice panel",
+    "Verify wheel scrolling moves the Practice panel around the content-sized example",
   );
   await page.waitForFunction(() => {
     const frame = document.querySelector<HTMLIFrameElement>(
@@ -504,27 +572,14 @@ try {
   });
   await lab.locator("summary").first().click();
   await lab.getByText("The agent's context", { exact: true }).hover();
-  const scrollBefore = await lab
-    .locator("html")
-    .evaluate(() =>
-      [...document.querySelectorAll("*")].reduce(
-        (sum, el) => sum + el.scrollTop,
-        0,
-      ),
-    );
+  const scrollBefore = await page
+    .locator(".practice")
+    .evaluate((panel) => panel.scrollTop);
   await page.mouse.wheel(0, 500);
-  await page.waitForFunction((before) => {
-    const content = document.querySelector<HTMLIFrameElement>(
-      "#lab-host iframe:not([hidden])",
-    )!.contentDocument!;
-    return (
-      [...content.querySelectorAll("*")].reduce(
-        (sum, el) => sum + el.scrollTop,
-        0,
-      ) >
-      before + 10
-    );
-  }, scrollBefore);
+  await page.waitForFunction(
+    (before) => document.querySelector(".practice")!.scrollTop > before + 10,
+    scrollBefore,
+  );
   await capture("07-imported-exercise");
   record("Check Practice at phone width without horizontal page overflow");
   await page.setViewportSize({ width: 390, height: 844 });

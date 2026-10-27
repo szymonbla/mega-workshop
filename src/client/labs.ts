@@ -1,4 +1,27 @@
 import type { LabItem, Section } from "../shared/types.ts";
+/** Only offer examples actually linked in this section's rendered article. */
+export function linkedLabs(section: Section): string[] {
+  const article = document.createElement("template");
+  article.innerHTML = section.html || "";
+  const names = new Set<string>();
+  for (const link of article.content.querySelectorAll("a[href]")) {
+    try {
+      const url = new URL(link.getAttribute("href")!);
+      const match =
+        /^\/MEGA-DOT-DEV\/examples\/tree\/main\/(?:examples|tools)\/([a-z0-9-]+)(?:\/|$)/.exec(
+          url.pathname,
+        );
+      if (
+        url.origin === "https://github.com" &&
+        match &&
+        section.labs.includes(match[1])
+      )
+        names.add(match[1]);
+    } catch {}
+  }
+  return [...names];
+}
+
 export function createLabs({
   host,
   tabs,
@@ -24,6 +47,8 @@ export function createLabs({
           | (Window & { mxTheme?: { set(theme: string): void } })
           | null
       )?.mxTheme?.set(theme);
+      if (frame.contentDocument)
+        frame.contentDocument.documentElement.dataset.theme = theme;
     } catch {}
   }
   function select(
@@ -71,13 +96,13 @@ export function createLabs({
         "Your goal",
         specific
           ? nextSection.task
-          : `Explore how “${title}” relates to “${nextSection.title}”. This example has no separate exercise brief; start with its instructions below.`,
+          : `Try the example linked in “${nextSection.title}”. Follow the instructions in the workspace below.`,
       ],
       [
         "Try it below",
         name === "tokenization-round-trip"
           ? "Enter a short sentence in the text field. Look at the token boundaries and IDs, then try another language or add an emoji. No API key is needed."
-          : "Read the example’s instructions and try its starting input. Then change one input or setting and compare the results. If it asks for a provider key, configure it in API settings; model requests use your provider’s billing.",
+          : "Try the starting input, then change one thing and compare the results.",
       ],
       [
         "Check your understanding",
@@ -95,7 +120,12 @@ export function createLabs({
       step.append(labelElement, text);
       steps.append(step);
     }
-    guide.append(steps);
+    const instructionsPanel = document.createElement("details");
+    instructionsPanel.className = "practice-instructions";
+    const instructionsSummary = document.createElement("summary");
+    instructionsSummary.textContent = "Step-by-step guide";
+    instructionsPanel.append(instructionsSummary, steps);
+    guide.append(instructionsPanel);
     if (specific && nextSection.answer) {
       const answer = document.createElement("details");
       const summary = document.createElement("summary");
@@ -103,16 +133,8 @@ export function createLabs({
       const text = document.createElement("p");
       text.textContent = nextSection.answer;
       answer.append(summary, text);
-      guide.append(answer);
+      instructionsPanel.append(answer);
     }
-    const start = document.createElement("button");
-    start.className = "primary example-start";
-    start.textContent = "Try this example ↓";
-    start.onclick = () => {
-      host.scrollIntoView({ behavior: "smooth", block: "start" });
-      host.querySelector<HTMLIFrameElement>("iframe:not([hidden])")?.focus();
-    };
-    guide.append(start);
     tabs.hidden = nextSection.labs.length < 2;
     const choice = document.getElementById("lab-choice");
     if (choice) choice.hidden = tabs.hidden;
@@ -130,14 +152,31 @@ export function createLabs({
       frame.loading = "eager";
       frame.addEventListener("load", () => {
         themeFrame(frame, getTheme());
-        // Some labs disable document scrolling when embedded. Practice supplies
-        // a viewport-sized frame, so its content must remain reachable.
         try {
           const content = frame.contentDocument;
-          if (!content) return;
-          const style = content.createElement("style");
-          style.textContent = "html{overflow-y:auto!important}";
+          const view = frame.contentWindow;
+          if (!content || !view) return;
+          const style = content.createElement("link");
+          style.rel = "stylesheet";
+          style.href = "/study/lab.css";
+          content.documentElement.dataset.workshopLab = name;
+          const resize = () => {
+            const page = content.querySelector<HTMLElement>(".mx-page");
+            if (page && !frame.hidden) {
+              frame.style.setProperty(
+                "--lab-height",
+                `${Math.ceil(page.getBoundingClientRect().height) + 2}px`,
+              );
+            }
+          };
+          style.onload = resize;
           content.head.append(style);
+          const observer = new ResizeObserver(resize);
+          const page = content.querySelector(".mx-page");
+          if (page) observer.observe(page);
+          frame.addEventListener("load", () => observer.disconnect(), {
+            once: true,
+          });
         } catch {}
       });
       frames.set(frameKey, frame);

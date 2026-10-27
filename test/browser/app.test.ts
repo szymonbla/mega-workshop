@@ -327,7 +327,7 @@ test("legacy numeric resume still opens the original topic after insertion and r
         number: 1,
         html: "<p>Additional material</p>",
         markdown: "Additional material",
-        labs: [],
+        labs: ["responses-request"], // Stale metadata without an article link.
         group: "New material",
         task: "",
         question: "",
@@ -357,6 +357,9 @@ test("legacy numeric resume still opens the original topic after insertion and r
   );
   await page.reload();
   await waitTitle(page, "Tokenization");
+  await chapter(page, "Inserted topic");
+  assert.equal(await page.locator("#tab-practice").isVisible(), false);
+  assert.equal(await page.locator("#panel-practice").isVisible(), false);
   await chapter(page, "Planning");
   assert.equal(await page.locator("#tab-practice").isVisible(), false);
   assert.equal(await page.locator("#article").isVisible(), true);

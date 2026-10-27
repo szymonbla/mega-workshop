@@ -25,6 +25,7 @@ export function loadStudyCatalog(root: string): Catalog {
     "navigation.js",
     "import-ui.js",
     "style.css",
+    "lab.css",
   ]) {
     files[`/study/${file}`] = file;
   }

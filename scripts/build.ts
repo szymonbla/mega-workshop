@@ -24,7 +24,7 @@ const options: BuildOptions = {
   target: "es2023",
 };
 async function copyAssets() {
-  for (const name of ["index.html", "style.css"]) {
+  for (const name of ["index.html", "style.css", "lab.css"]) {
     await copyFile(
       new URL(`../public/${name}`, import.meta.url),
       new URL(name, output),
