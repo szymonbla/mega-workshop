@@ -1,4 +1,4 @@
-# MEGA Study
+# MEGA Workshop
 
 A local study app for people learning with MEGA.dev. Read lessons, listen to audio, take notes, track your progress, and open exercises in one place.
 
@@ -8,7 +8,7 @@ This repository contains the app and synthetic test data. It does not include co
 
 Working through a course often means switching between lesson pages, recordings, notes, and exercises. It is easy to lose your place or spend time finding the right part of a lesson.
 
-MEGA Study brings those activities together. You can read a section, listen while following the text, try an exercise, and return to where you left off. The aim is simple: spend less time managing learning materials and more time learning.
+MEGA Workshop brings those activities together. You can read a section, listen while following the text, try an exercise, and return to where you left off. The aim is simple: spend less time managing learning materials and more time learning.
 
 The app runs on your computer and keeps imported materials there. It is intended for personal study with your own course access.
 
@@ -30,8 +30,8 @@ Keep the server running while lessons are being prepared. Closing the import pan
 You need Node.js 22.18 or later.
 
 ```sh
-git clone https://github.com/szymonbla/mega-study.git
-cd mega-study
+git clone https://github.com/szymonbla/mega-workshop.git
+cd mega-workshop
 npm run setup
 npm start
 ```
