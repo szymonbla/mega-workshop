@@ -1,0 +1,98 @@
+import { chromium } from 'playwright';
+import { parseHTML } from 'linkedom';
+import { mkdir, chmod } from 'node:fs/promises';
+import { join } from 'node:path';
+import { existsSync } from 'node:fs';
+
+export class AccessError extends Error {
+  constructor(message = 'Log in to MEGA in the browser window, then select “Continue”.') { super(message); this.status = 401; }
+}
+export class LessonUnavailableError extends AccessError {}
+
+export function lessonAddress(value) {
+  let url;
+  try { url = new URL(value); } catch { throw new Error('Paste a MEGA lesson link.'); }
+  const match = /^\/lessons\/(s0[1-4]e0[1-5])\/?$/.exec(url.pathname);
+  if (url.origin !== 'https://hq.mega.dev' || url.username || url.password || !match) throw new Error('Use a lesson link from https://hq.mega.dev/lessons/.');
+  return {id: match[1], url: `https://hq.mega.dev/lessons/${match[1]}/`};
+}
+export function parseLessonPage(html, url) {
+  const {document} = parseHTML(html);
+  if (!document.querySelector('a[href="/logout"], a[href="https://hq.mega.dev/logout"]')) throw new AccessError();
+  const markdown = document.querySelector('a[href$="/lesson.md"]')?.getAttribute('href');
+  if (!markdown) throw new LessonUnavailableError('This account cannot open this lesson yet. Check its publication date and your MEGA access.');
+  const absolute = value => value ? new URL(value, url).href : null;
+  const chapters = [...document.querySelectorAll('.lesson-audio-chapters button[data-start]')].map((button, i) => ({
+    slug: button.getAttribute('data-heading') || (i === 0 ? 'introduction' : ''),
+    start: Number(button.getAttribute('data-start')),
+    title: button.querySelector('span:last-child')?.textContent || 'Introduction',
+  }));
+  return {markdown: absolute(markdown), transcript: absolute(document.querySelector('a[href$="/transcript.md"]')?.getAttribute('href')),
+    audio: absolute(document.querySelector('audio[src]')?.getAttribute('src')), chapters,
+    duration: Number(document.querySelector('.lesson-audio-seek')?.getAttribute('max')),
+  };
+}
+export class MegaSource {
+  constructor(directory) { this.directory = directory; this.context = null; this.opening = null; this.checks = new Map(); }
+  async browser(visible = false) {
+    if (this.opening) await this.opening;
+    if (visible && this.context && !this.visible) { await this.context.close(); this.context = null; }
+    if (!this.context) {
+      this.opening = (async () => {
+        await mkdir(this.directory, {recursive: true, mode: 0o700});
+        await chmod(this.directory, 0o700);
+        const channel = process.env.BROWSER_CHANNEL || (process.platform === 'darwin' && existsSync('/Applications/Google Chrome.app') ? 'chrome' : undefined);
+        this.context = await chromium.launchPersistentContext(join(this.directory, 'browser'), {headless: !visible, acceptDownloads: false, ...(channel ? {channel} : {})});
+        this.visible = visible;
+        this.context.on('close', () => { this.context = null; });
+      })();
+      try { await this.opening; } finally { this.opening = null; }
+    }
+    return this.context;
+  }
+  async login() {
+    const context = await this.browser(true);
+    const page = context.pages()[0] || await context.newPage();
+    await page.goto('https://hq.mega.dev/lessons', {waitUntil: 'domcontentloaded'});
+    await page.bringToFront();
+  }
+  async get(url, kind = 'text') {
+    const address = new URL(url);
+    if (address.origin !== 'https://hq.mega.dev' || !/^\/(lessons|figures)\//.test(address.pathname)) throw Error('Unexpected material URL.');
+    const context = await this.browser();
+    const response = await context.request.get(address.href, {maxRedirects: 0, timeout: 120000});
+    try {
+      if (response.status() === 401 || (response.status() === 403 && kind !== 'lesson') || (response.status() >= 300 && response.status() < 400)) throw new AccessError();
+      if ([403,404].includes(response.status()) && kind === 'lesson') throw new LessonUnavailableError('This lesson is not published yet.');
+      if (!response.ok()) throw Error(`MEGA could not return a material (HTTP ${response.status()}). Retry this step.`);
+      const type = response.headers()['content-type'] || '';
+      if (kind === 'audio' && !/audio\//.test(type)) throw new AccessError();
+      if (kind === 'image' && !/image\/(png|jpeg|webp)/.test(type)) throw Error('MEGA did not return a supported image.');
+      const body = await response.body();
+      if (kind === 'markdown' && /<!doctype|<html/i.test(body.toString().slice(0,500))) throw new AccessError();
+      return body;
+    } finally { await response.dispose(); }
+  }
+  async check(id) {
+    if(this.checks.has(id))return this.checks.get(id);
+    const {url}=lessonAddress(`https://hq.mega.dev/lessons/${id}/`);
+    const pending=this.get(url, 'lesson').then(body=>parseLessonPage(body.toString(),url)).finally(()=>this.checks.delete(id));
+    this.checks.set(id,pending);return pending;
+  }
+  async availableLessons(ids) {
+    const available = [];
+    for (const id of ids) {
+      try { await this.check(id); available.push(id); }
+      catch (error) { if (!(error instanceof LessonUnavailableError)) throw error; }
+    }
+    if (ids.includes('s01e01')) await this.check('s01e01');
+    return available;
+  }
+  async logout() {
+    if (this.opening) await this.opening;
+    const context = await this.browser();
+    await context.clearCookies();
+    await context.close();
+  }
+  async close() { if (this.opening) await this.opening; await this.context?.close(); }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "mega-study",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node study/server.mjs",
+    "setup": "npm install",
+    "test": "node --test study/*.test.mjs",
+    "test:browser": "node --test study/browser/*.test.mjs",
+    "setup:import": "playwright install chromium",
+    "audit:content": "node scripts/audit-content.mjs"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "linkedom": "^0.18.14",
+    "marked": "16.4.2",
+    "sanitize-html": "^2.18.1",
+    "playwright": "1.59.1"
+  }
+}
