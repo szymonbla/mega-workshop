@@ -24,12 +24,14 @@ export async function startStudy({
   port = Number(process.env.PORT || 4830),
   root = defaultRoot,
   source,
+  providerFetch,
   stateDirectory = defaultStateDirectory,
   labsDirectory = defaultStateDirectory,
 }: {
   port?: number;
   root?: string;
   source?: LessonSource;
+  providerFetch?: typeof fetch;
   stateDirectory?: string;
   labsDirectory?: string;
 } = {}) {
@@ -58,6 +60,7 @@ export async function startStudy({
   await importer.initialize();
   const handleRequest = createStudyHandler({
     catalog,
+    providerFetch,
     importer,
     importedLabs,
     getCatalog: () => catalog,

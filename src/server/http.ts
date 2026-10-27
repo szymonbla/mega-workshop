@@ -7,6 +7,8 @@ import type { ImportedLabs } from "./import-labs.ts";
 import type { LessonImporter } from "./importer.ts";
 import type { Catalog, RequestHandler } from "./types.ts";
 
+import { verifyProviderKey } from "./verify-key.ts";
+
 function json(res: ServerResponse, status: number, value: unknown) {
   res.writeHead(status, {
     "Content-Type": "application/json; charset=utf-8",
@@ -21,10 +23,12 @@ export function createStudyHandler({
   catalog,
   publicRoot,
   saveSettings,
+  providerFetch,
   importer,
   importedLabs,
   getCatalog = () => catalog,
 }: {
+  providerFetch?: typeof fetch;
   catalog: Catalog;
   publicRoot: string;
   saveSettings?: (name: string, key: string) => void | Promise<void>;
@@ -167,22 +171,51 @@ export function createStudyHandler({
             if (body.length > 8192)
               return json(res, 413, { error: "Request body is too large." });
           }
-          const input = JSON.parse(body);
-          if (
-            !["openai", "openrouter"].includes(input.provider) ||
-            typeof input.key !== "string" ||
-            !/^[A-Za-z0-9_.-]{15,512}$/.test(input.key)
-          ) {
-            return json(res, 400, {
-              error: "Select a provider and enter a valid API key.",
-            });
+          let input: { provider?: unknown; key?: unknown } | null;
+          try {
+            input = JSON.parse(body);
+          } catch {
+            return json(res, 400, { error: "Send settings as valid JSON." });
           }
+          if (
+            !input ||
+            (input.provider !== "openai" && input.provider !== "openrouter")
+          )
+            return json(res, 400, { error: "Select OpenAI or OpenRouter." });
+          const key = typeof input.key === "string" ? input.key.trim() : "";
+          let error: string | undefined;
+          if (!key) error = "Enter an API key from the selected provider.";
+          else if (/^Bearer\s/i.test(key) || /["'`]/.test(key))
+            error =
+              "Paste only the API key, without quotes or the Bearer prefix.";
+          else if (/\s/.test(key))
+            error =
+              "The API key contains spaces or line breaks. Copy the complete key again.";
+          else if (key.length < 15)
+            error =
+              "The API key is too short. Copy the complete key from your provider.";
+          else if (key.length > 4096)
+            error =
+              "The API key is too long (maximum 4096 characters). Paste only the key.";
+          else if (!/^[A-Za-z0-9_.+\/=-]+$/.test(key))
+            error =
+              "The API key contains unsupported characters. Copy it again without extra text or hidden characters.";
+          if (error) return json(res, 400, { error });
           const keyName =
             input.provider === "openai"
               ? "OPENAI_API_KEY"
               : "OPENROUTER_API_KEY";
           if (!saveSettings) throw Error("Settings are unavailable.");
-          await saveSettings(keyName, input.key);
+          const verification = await verifyProviderKey(
+            input.provider,
+            key,
+            providerFetch,
+          );
+          if (verification)
+            return json(res, verification.status, {
+              error: verification.error,
+            });
+          await saveSettings(keyName, key);
           return json(res, 200, { ok: true });
         }
         return json(res, 404, { error: "Not found." });
