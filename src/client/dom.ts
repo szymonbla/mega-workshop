@@ -1,4 +1,13 @@
 interface AppElements {
+  "#startup": HTMLElement;
+  "#startup-title": HTMLHeadingElement;
+  "#startup-detail": HTMLParagraphElement;
+  "#connection-retry": HTMLButtonElement;
+  "#download-notice": HTMLDivElement;
+  "#download-detail": HTMLSpanElement;
+  "#download-details": HTMLButtonElement;
+  "#connection-activity": HTMLDivElement;
+  "#connection-detail": HTMLSpanElement;
   "#course-home": HTMLElementTagNameMap["button"];
   "#theme-toggle": HTMLElementTagNameMap["button"];
   "#import-button": HTMLElementTagNameMap["button"];
@@ -23,6 +32,8 @@ interface AppElements {
   "#lesson-context": HTMLElementTagNameMap["p"];
   "#bar": HTMLElementTagNameMap["div"];
   "#progress-label": HTMLElementTagNameMap["p"];
+  "#complete-topic": HTMLButtonElement;
+  "#complete-lesson": HTMLElementTagNameMap["button"];
   "#search": HTMLElementTagNameMap["input"];
   "#review": HTMLElementTagNameMap["button"];
   "#chapters": HTMLElementTagNameMap["nav"];
@@ -65,6 +76,10 @@ interface AppElements {
   "#close-config": HTMLElementTagNameMap["button"];
   "#config-description": HTMLElementTagNameMap["p"];
   "#provider": HTMLElementTagNameMap["select"];
+  "#provider-key-status": HTMLElementTagNameMap["p"];
+  "#replace-key": HTMLButtonElement;
+  "#cancel-key-change": HTMLButtonElement;
+  "#key-entry": HTMLDivElement;
   "#api-key": HTMLElementTagNameMap["input"];
   "#config-status": HTMLElementTagNameMap["p"];
   "#lesson-import": HTMLElementTagNameMap["dialog"];

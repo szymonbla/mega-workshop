@@ -27,3 +27,7 @@ Preconditions: fresh isolated instance, locally stored, Git-ignored S01E01 conte
 ## Gotchas
 
 Materials are never shipped in this repository. Pending is expected, not a locked prerequisite. Resume saves a stable section ID, not a numeric position. Topic changes replace history; do not assume every topic click adds a Back entry. No completion status is created merely by reading.
+
+## Startup and connection feedback
+
+The initial HTML displays an animated startup screen before authentication requests finish. It follows real stages: saved connection, lesson synchronization, then course loading. `test/browser/app.test.ts` holds the status and course responses to verify that the screen stays visible until content is ready; it also checks reduced-motion behavior. A failed request shows connection guidance and Retry connection. Sign-in has an activity indicator while opening the browser or verifying access. Background downloads show the current lesson/step and View progress without blocking ready lessons. These states do not claim real MEGA authentication coverage.

@@ -170,3 +170,27 @@ test("storage events match only the current lesson or all progress on the overvi
   assert.equal(store.affects("mega-study-last"), true);
   assert.equal(store.affects("mega-theme"), false);
 });
+
+test("unmarking a topic overrides legacy completion without changing other topics or notes", async () => {
+  const { createProgressStore } = await import("../src/client/progress.ts");
+  const db = storage();
+  const lesson = {
+    id: "s01e01",
+    sections: [
+      { id: "a", kind: "topic" },
+      { id: "b", kind: "topic" },
+    ],
+  };
+  db.setItem(
+    legacyKey(lesson.id),
+    JSON.stringify({ done: ["a", "b"], notes: { a: "Keep this" } }),
+  );
+  const store = createProgressStore(db);
+  assert.equal(store.mark(lesson, "a", "pending").saved, true);
+  const reopened = createProgressStore(db);
+  assert.deepEqual(reopened.read(lesson).done, ["b"]);
+  assert.deepEqual(reopened.read(lesson).notes, { a: "Keep this" });
+  assert.equal(reopened.counts(lesson).complete, false);
+  reopened.mark(lesson, "a", "done");
+  assert.equal(reopened.counts(lesson).complete, true);
+});

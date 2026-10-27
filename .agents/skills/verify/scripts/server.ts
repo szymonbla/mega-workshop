@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { AccessError } from "../../../../src/server/mega-source.ts";
 import { startStudy } from "../../../../src/server/server.ts";
 import type { LessonSource } from "../../../../src/server/types.ts";
+import { syntheticProviderFetch } from "../../../../test/fixtures/provider.ts";
 import { sourceMetadata } from "../../../../test/fixtures/synthetic.ts";
 
 let signedIn = false;
@@ -27,6 +28,7 @@ const source: LessonSource = {
   async close() {},
 };
 const viewer = await startStudy({
+  providerFetch: syntheticProviderFetch,
   source,
   stateDirectory: join(dirname(process.env.MEX_ENV_FILE!), "state"),
 });

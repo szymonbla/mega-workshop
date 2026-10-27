@@ -111,6 +111,61 @@ async function chapter(page: Page, title: string) {
   await waitTitle(page, title);
 }
 
+test("startup explains delayed connection and course loading before revealing the workspace", async (t) => {
+  const context = await openContext(t);
+  let releaseStatus!: () => void;
+  let releaseCourse!: () => void;
+  const statusGate = new Promise<void>((resolve) => {
+    releaseStatus = resolve;
+  });
+  const courseGate = new Promise<void>((resolve) => {
+    releaseCourse = resolve;
+  });
+  t.after(() => {
+    releaseStatus();
+    releaseCourse();
+  });
+  await context.route("**/study-api/auth/status", async (route) => {
+    await statusGate;
+    await route.continue();
+  });
+  await context.route("**/study-api/import-labs", async (route) => {
+    await courseGate;
+    await route.continue();
+  });
+  const page = await context.newPage();
+  await page.goto(base, { waitUntil: "domcontentloaded" });
+  await page.locator("#startup").waitFor({ state: "visible" });
+  assert.match(
+    await page.locator("#startup-detail").innerText(),
+    /saved MEGA connection/,
+  );
+  assert.equal(await page.locator("#course-overview").isVisible(), false);
+  releaseStatus();
+  await page.waitForFunction(
+    () =>
+      document
+        .querySelector(".startup-stages li:last-child")
+        ?.getAttribute("data-state") === "active",
+  );
+  assert.match(
+    await page.locator("#startup-detail").innerText(),
+    /Loading your course/,
+  );
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  assert.equal(
+    await page
+      .locator(".loading-orbit")
+      .evaluate(
+        (element) => getComputedStyle(element, "::before").animationName,
+      ),
+    "none",
+  );
+  releaseCourse();
+  await page.locator("#startup").waitFor({ state: "hidden" });
+  await page.locator("#week-grid .course-lesson").first().waitFor();
+});
+
 test("reader preserves old links, lab results, theme and audio interactions", {
   timeout: 60000,
 }, async (t) => {
@@ -332,12 +387,37 @@ test("saving settings resets labs without returning the test credential", {
   assert.deepEqual(await response.json(), { ok: true });
   await page
     .locator("#config-status")
-    .filter({ hasText: "Saved. All labs can access your key." })
+    .filter({ hasText: "Saved. API key verified." })
     .waitFor();
   assert.equal(await page.locator("#api-key").inputValue(), "");
   await page.waitForFunction(
     () => window.oldFrame !== document.querySelector("iframe"),
   );
+  assert.equal(await page.locator("#api-key").isVisible(), false);
+  assert.equal(
+    await page.locator("#key-form button[type=submit]").isDisabled(),
+    true,
+  );
+  await page
+    .locator("#provider-key-status")
+    .filter({ hasText: "OpenAI API key is saved" })
+    .waitFor();
+  await page.locator("#replace-key").click();
+  const savedEnv = await readFile(join(directory, ".env"), "utf8");
+  await page.locator("#api-key").fill("synthetic-rejected-key");
+  await page.locator("#key-form button[type=submit]").click();
+  await page
+    .locator("#config-status")
+    .filter({ hasText: "OpenAI rejected this API key" })
+    .waitFor();
+  assert.equal(await readFile(join(directory, ".env"), "utf8"), savedEnv);
+  assert.equal(await page.locator("#api-key").isDisabled(), false);
+  await page.locator("#api-key").fill("synthetic-browser-test-key");
+  await page.locator("#key-form button[type=submit]").click();
+  await page
+    .locator("#config-status")
+    .filter({ hasText: "Saved. API key verified." })
+    .waitFor();
   await page.locator("#close-config").click();
   await lab.locator("#text").waitFor();
   assert.equal(await lab.locator("#text").inputValue(), "Hey, how are you?");
@@ -382,7 +462,14 @@ test("mobile reader supports keyboard word seeking and highlight preferences", {
   assert.equal(await page.locator(".spoken-word").count(), 0);
 });
 
-test("a new browser must connect to MEGA before seeing any lesson content", async (t) => {
+test("a browser without a saved connection must connect before seeing lesson content", async (t) => {
+  // Earlier tests leave a restorable session on this shared test server.
+  const connected = await openContext(t);
+  const logout = await connected.request.post(base + "study-api/auth/logout", {
+    headers: { Origin: new URL(base).origin },
+    data: {},
+  });
+  assert.equal(logout.status(), 200);
   const context = await browser.newContext();
   t.after(() => context.close());
   const page = await context.newPage();

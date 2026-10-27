@@ -1,5 +1,12 @@
 import { existsSync } from "node:fs";
-import { chmod, mkdir } from "node:fs/promises";
+import {
+  chmod,
+  mkdir,
+  readFile,
+  rename,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { join } from "node:path";
 import { parseHTML } from "linkedom";
 import type { BrowserContext } from "playwright";
@@ -85,43 +92,76 @@ export class MegaSource {
     this.checks = new Map();
   }
   async browser(visible = false) {
-    if (this.opening) await this.opening;
+    while (this.opening) await this.opening;
+    this.opening = this.openBrowser(visible);
+    try {
+      await this.opening;
+    } finally {
+      this.opening = null;
+    }
+    if (!this.context)
+      throw Error("The MEGA browser closed before it was ready.");
+    return this.context;
+  }
+  private async openBrowser(visible: boolean) {
     if (visible && this.context && !this.visible) {
       await this.context.close();
       this.context = null;
     }
     if (!this.context) {
-      this.opening = (async () => {
-        await mkdir(this.directory, { recursive: true, mode: 0o700 });
-        await chmod(this.directory, 0o700);
-        const channel =
-          process.env.BROWSER_CHANNEL ||
-          (process.platform === "darwin" &&
-          existsSync("/Applications/Google Chrome.app")
-            ? "chrome"
-            : undefined);
-        this.context = await chromium.launchPersistentContext(
-          join(this.directory, "browser"),
-          {
-            headless: !visible,
-            acceptDownloads: false,
-            ...(channel ? { channel } : {}),
-          },
-        );
-        this.visible = visible;
-        this.context.on("close", () => {
-          this.context = null;
-        });
-      })();
+      await mkdir(this.directory, { recursive: true, mode: 0o700 });
+      await chmod(this.directory, 0o700);
+      const channel =
+        process.env.BROWSER_CHANNEL ||
+        (process.platform === "darwin" &&
+        existsSync("/Applications/Google Chrome.app")
+          ? "chrome"
+          : undefined);
+      this.context = await chromium.launchPersistentContext(
+        join(this.directory, "browser"),
+        {
+          headless: !visible,
+          acceptDownloads: false,
+          ...(channel ? { channel } : {}),
+        },
+      );
+      const context = this.context;
       try {
-        await this.opening;
-      } finally {
-        this.opening = null;
+        const cookies = JSON.parse(
+          await readFile(join(this.directory, "cookies.json"), "utf8"),
+        );
+        await context.addCookies(cookies);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+          await context.close();
+          this.context = null;
+          throw error;
+        }
       }
+      this.visible = visible;
+      context.on("close", () => {
+        if (this.context === context) this.context = null;
+      });
     }
-    if (!this.context)
-      throw Error("The MEGA browser closed before it was ready.");
-    return this.context;
+  }
+  private saving: Promise<void> = Promise.resolve();
+  async saveSession() {
+    const context = this.context;
+    if (!context) return;
+    const pending = this.saving
+      .catch(() => {})
+      .then(async () => {
+        await mkdir(this.directory, { recursive: true, mode: 0o700 });
+        const file = join(this.directory, "cookies.json");
+        await writeFile(
+          file + ".tmp",
+          JSON.stringify(await context.cookies()),
+          { mode: 0o600 },
+        );
+        await rename(file + ".tmp", file);
+      });
+    this.saving = pending;
+    await pending;
   }
   async login() {
     const context = await this.browser(true);
@@ -175,7 +215,11 @@ export class MegaSource {
     if (this.checks.has(id)) return this.checks.get(id)!;
     const { url } = lessonAddress(`https://hq.mega.dev/lessons/${id}/`);
     const pending = this.get(url, "lesson")
-      .then((body) => parseLessonPage(body.toString(), url))
+      .then(async (body) => {
+        const metadata = parseLessonPage(body.toString(), url);
+        await this.saveSession();
+        return metadata;
+      })
       .finally(() => this.checks.delete(id));
     this.checks.set(id, pending);
     return pending;
@@ -196,11 +240,14 @@ export class MegaSource {
   async logout() {
     if (this.opening) await this.opening;
     const context = await this.browser();
+    await this.saving.catch(() => {});
+    await rm(join(this.directory, "cookies.json"), { force: true });
     await context.clearCookies();
     await context.close();
   }
   async close() {
     if (this.opening) await this.opening;
+    await this.saving.catch(() => {});
     await this.context?.close();
   }
 }
