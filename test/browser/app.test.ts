@@ -332,12 +332,37 @@ test("saving settings resets labs without returning the test credential", {
   assert.deepEqual(await response.json(), { ok: true });
   await page
     .locator("#config-status")
-    .filter({ hasText: "Saved. All labs can access your key." })
+    .filter({ hasText: "Saved. API key verified." })
     .waitFor();
   assert.equal(await page.locator("#api-key").inputValue(), "");
   await page.waitForFunction(
     () => window.oldFrame !== document.querySelector("iframe"),
   );
+  assert.equal(await page.locator("#api-key").isVisible(), false);
+  assert.equal(
+    await page.locator("#key-form button[type=submit]").isDisabled(),
+    true,
+  );
+  await page
+    .locator("#provider-key-status")
+    .filter({ hasText: "OpenAI API key is saved" })
+    .waitFor();
+  await page.locator("#replace-key").click();
+  const savedEnv = await readFile(join(directory, ".env"), "utf8");
+  await page.locator("#api-key").fill("synthetic-rejected-key");
+  await page.locator("#key-form button[type=submit]").click();
+  await page
+    .locator("#config-status")
+    .filter({ hasText: "OpenAI rejected this API key" })
+    .waitFor();
+  assert.equal(await readFile(join(directory, ".env"), "utf8"), savedEnv);
+  assert.equal(await page.locator("#api-key").isDisabled(), false);
+  await page.locator("#api-key").fill("synthetic-browser-test-key");
+  await page.locator("#key-form button[type=submit]").click();
+  await page
+    .locator("#config-status")
+    .filter({ hasText: "Saved. API key verified." })
+    .waitFor();
   await page.locator("#close-config").click();
   await lab.locator("#text").waitFor();
   assert.equal(await lab.locator("#text").inputValue(), "Hey, how are you?");

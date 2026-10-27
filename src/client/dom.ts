@@ -66,6 +66,10 @@ interface AppElements {
   "#close-config": HTMLElementTagNameMap["button"];
   "#config-description": HTMLElementTagNameMap["p"];
   "#provider": HTMLElementTagNameMap["select"];
+  "#provider-key-status": HTMLElementTagNameMap["p"];
+  "#replace-key": HTMLButtonElement;
+  "#cancel-key-change": HTMLButtonElement;
+  "#key-entry": HTMLDivElement;
   "#api-key": HTMLElementTagNameMap["input"];
   "#config-status": HTMLElementTagNameMap["p"];
   "#lesson-import": HTMLElementTagNameMap["dialog"];
