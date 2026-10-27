@@ -1,8 +1,15 @@
 interface AppElements {
+  "#startup": HTMLElement;
+  "#startup-title": HTMLHeadingElement;
+  "#startup-detail": HTMLParagraphElement;
+  "#connection-retry": HTMLButtonElement;
+  "#download-notice": HTMLDivElement;
+  "#download-detail": HTMLSpanElement;
+  "#connection-activity": HTMLDivElement;
+  "#connection-detail": HTMLSpanElement;
   "#course-home": HTMLElementTagNameMap["button"];
   "#theme-toggle": HTMLElementTagNameMap["button"];
   "#import-button": HTMLElementTagNameMap["button"];
-  "#import-toast": HTMLElementTagNameMap["div"];
   "#settings": HTMLElementTagNameMap["button"];
   "#key-status": HTMLElementTagNameMap["span"];
   "#course-overview": HTMLElementTagNameMap["section"];
@@ -24,6 +31,8 @@ interface AppElements {
   "#lesson-context": HTMLElementTagNameMap["p"];
   "#bar": HTMLElementTagNameMap["div"];
   "#progress-label": HTMLElementTagNameMap["p"];
+  "#complete-topic": HTMLButtonElement;
+  "#complete-lesson": HTMLElementTagNameMap["button"];
   "#search": HTMLElementTagNameMap["input"];
   "#review": HTMLElementTagNameMap["button"];
   "#chapters": HTMLElementTagNameMap["nav"];
@@ -55,7 +64,9 @@ interface AppElements {
   "#panel-read": HTMLElementTagNameMap["section"];
   "#article": HTMLElementTagNameMap["article"];
   "#panel-practice": HTMLElementTagNameMap["section"];
-  "#task": HTMLElementTagNameMap["p"];
+  "#practice-guide": HTMLElementTagNameMap["div"];
+  "#practice-read": HTMLElementTagNameMap["button"];
+  "#practice-return": HTMLElementTagNameMap["button"];
   "#lab-tabs": HTMLElementTagNameMap["div"];
   "#source": HTMLElementTagNameMap["a"];
   "#lab-host": HTMLElementTagNameMap["div"];
@@ -66,6 +77,10 @@ interface AppElements {
   "#close-config": HTMLElementTagNameMap["button"];
   "#config-description": HTMLElementTagNameMap["p"];
   "#provider": HTMLElementTagNameMap["select"];
+  "#provider-key-status": HTMLElementTagNameMap["p"];
+  "#replace-key": HTMLButtonElement;
+  "#cancel-key-change": HTMLButtonElement;
+  "#key-entry": HTMLDivElement;
   "#api-key": HTMLElementTagNameMap["input"];
   "#config-status": HTMLElementTagNameMap["p"];
   "#lesson-import": HTMLElementTagNameMap["dialog"];

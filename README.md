@@ -23,6 +23,8 @@ The app runs on your computer and keeps imported materials there. It is intended
 
 After you connect your account, the app checks the course catalog and downloads available lessons in the background. It skips completed imports and can resume unfinished ones. You can also use **Check for new lessons / retry downloads** to check again.
 
+The app remembers your connection in `.study-data/.mega-study/` (or under `STUDY_DATA_HOME` if configured). It saves MEGA cookies privately, including session cookies, and restores the local app session when you reopen it. Disconnecting removes the saved login. MEGA may still require you to sign in again when its session expires or is revoked.
+
 Keep the server running while lessons are being prepared. Closing the import panel does not stop the queue. A failed lesson does not block the others; an expired session requires signing in again.
 
 ## Quick start

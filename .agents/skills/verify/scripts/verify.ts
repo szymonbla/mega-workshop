@@ -15,6 +15,7 @@ import type {
   Curriculum,
   ProviderStatus,
 } from "../../../../src/shared/types.ts";
+import { verifyLayout } from "./layout.ts";
 
 const root = fileURLToPath(new URL("../../../../", import.meta.url));
 const evidenceRoot = resolve(dataHome, ".audit/verify");
@@ -157,6 +158,7 @@ try {
   );
   context = await browser.newContext({
     viewport: { width: 1440, height: 1000 },
+    recordVideo: { dir: evidence, size: { width: 1440, height: 1000 } },
   });
   await context.route("**/*", (route) => {
     if (new URL(route.request().url()).origin === new URL(base).origin)
@@ -235,6 +237,133 @@ try {
   );
   assert.match(page.url(), /#\/lesson\/s01e01\/tokenization$/);
   await capture("02-topic");
+  await verifyLayout(page, evidence, record, capture);
+  record(
+    "Open guided example, tokenize text, reveal explanation and return to reading",
+  );
+  await page.locator("#audio-mini-play").click();
+  await page.locator("#tab-practice").click();
+  assert.equal(await page.locator(".topic-audio").isVisible(), false);
+  assert.equal(
+    await page
+      .locator("audio")
+      .evaluate((audio: HTMLAudioElement) => audio.paused),
+    true,
+  );
+  assert.equal(await page.locator("#practice-guide li").count(), 3);
+  assert.equal(await page.locator("#lab-tabs").isVisible(), false);
+  assert.equal(
+    await page.locator(".practice-instructions").getAttribute("open"),
+    null,
+  );
+  await capture("02-example-guide");
+  await page.locator(".practice-instructions > summary").click();
+  const tokenLab = page.frameLocator(
+    'iframe[src="/ui/tokenization-round-trip/"]',
+  );
+  await tokenLab.locator("#text").fill("Saved experiment 🌍");
+  await tokenLab
+    .locator("#headline-text")
+    .filter({ hasText: "Decoding the IDs gives back the same text." })
+    .waitFor();
+  await capture("02-example-result");
+  await page.locator(".practice-instructions details > summary").click();
+  assert.notEqual(
+    await page.locator(".practice-instructions").getAttribute("open"),
+    null,
+  );
+  await page.locator("#practice-return").click();
+  assert.equal(await page.locator("#panel-read").isVisible(), true);
+  await page
+    .locator('#article a[href*="/examples/tokenization-round-trip"]')
+    .click();
+  assert.equal(
+    await page.locator("#tab-practice").getAttribute("aria-selected"),
+    "true",
+  );
+  assert.equal(
+    await tokenLab.locator("#text").inputValue(),
+    "Saved experiment 🌍",
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator("#practice-guide").scrollIntoViewIfNeeded();
+  assert.equal(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+    true,
+  );
+  await capture("02-example-mobile");
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.locator("#practice-read").click();
+  record("Verify a topic without example links shows only reading");
+  const practiceCatalog = (await (
+    await context!.request.get(base + "study-api/curriculum")
+  ).json()) as Curriculum;
+  const topics = practiceCatalog.weeks
+    .flatMap((week) => week.lessons)
+    .find((lesson) => lesson.id === "s01e01")!.sections;
+  const readOnly = topics.find(
+    (topic) => topic.kind === "topic" && !topic.labs.length,
+  )!;
+  assert.ok(readOnly);
+  await page
+    .locator("#chapters button")
+    .filter({ hasText: readOnly.title })
+    .click();
+  assert.equal(await page.locator("#tab-practice").isVisible(), false);
+  assert.equal(await page.locator("#panel-practice").isVisible(), false);
+  assert.equal(await page.locator("#panel-read").isVisible(), true);
+  await capture("02-read-only");
+  record(
+    "Inspect the API request form on desktop and mobile without sending a request",
+  );
+  const requestTopic = topics.find((topic) =>
+    topic.labs.includes("responses-request"),
+  )!;
+  assert.ok(requestTopic);
+  await page
+    .locator("#chapters button")
+    .filter({ hasText: requestTopic.title })
+    .click();
+  await page.locator("#tab-practice").click();
+  const requestLab = page.frameLocator('iframe[src="/ui/responses-request/"]');
+  await requestLab
+    .locator('link[href="/study/lab.css"]')
+    .waitFor({ state: "attached" });
+  await requestLab
+    .locator("#prompt")
+    .fill("Explain one useful application of language models.");
+  for (const viewport of [
+    { width: 1440, height: 1000 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await requestLab.locator("#prompt").scrollIntoViewIfNeeded();
+    await requestLab.locator(".mx-page").evaluate(async () => {
+      await document.fonts.ready;
+    });
+    assert.equal(
+      await requestLab
+        .locator("body")
+        .evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      true,
+    );
+    const padding = await requestLab
+      .locator(".mx-page")
+      .evaluate((element) => parseFloat(getComputedStyle(element).paddingLeft));
+    assert.ok(padding >= 12);
+    await capture(`02-request-${viewport.width}`);
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.locator("#theme-toggle").click();
+  await requestLab.locator('html[data-theme="light"]').waitFor();
+  await capture("02-request-light");
+  await page.locator("#theme-toggle").click();
+  await page
+    .locator("#chapters button")
+    .filter({ hasText: "Tokenization" })
+    .click();
   record("Return to overview, reload, then click Continue learning");
   await page.locator("#back-course").click();
   await page.reload();
@@ -261,6 +390,71 @@ try {
     JSON.stringify(storage, null, 2),
   );
   await capture("03-resumed");
+  record("Complete one topic and undo it after reload using the topic control");
+  await page.locator("#complete-topic").click();
+  assert.equal(
+    await page.locator("#progress-label").textContent(),
+    "1 of 24 topics completed",
+  );
+  await page.reload();
+  await page
+    .locator('#complete-topic[aria-pressed="true"]')
+    .waitFor({ state: "visible" });
+  await capture("03-topic-completed");
+  await page.locator("#complete-topic").click();
+  assert.equal(
+    await page.locator("#progress-label").textContent(),
+    "0 of 24 topics completed",
+  );
+  await page.reload();
+  await page
+    .locator('#complete-topic[aria-pressed="false"]')
+    .waitFor({ state: "visible" });
+  assert.equal(
+    await page.locator("#progress-label").textContent(),
+    "0 of 24 topics completed",
+  );
+
+  record(
+    "Complete S01E01 through the button, then reload and verify persisted course progress",
+  );
+  await page.locator("#complete-lesson").click();
+  assert.equal(
+    await page.locator("#progress-label").textContent(),
+    "24 of 24 topics completed",
+  );
+  assert.equal(await page.locator("#complete-lesson").isDisabled(), true);
+  await capture("03-completed");
+  record("Undo one topic from a completed lesson, then complete it again");
+  await page.locator("#complete-topic").click();
+  assert.equal(
+    await page.locator("#progress-label").textContent(),
+    "23 of 24 topics completed",
+  );
+  assert.equal(await page.locator("#complete-lesson").isDisabled(), false);
+  await page.locator("#complete-topic").click();
+  assert.equal(await page.locator("#complete-lesson").isDisabled(), true);
+
+  await page.reload();
+  await page.locator("#complete-lesson:disabled").waitFor({ state: "visible" });
+  assert.equal(
+    await page.locator("#progress-label").textContent(),
+    "24 of 24 topics completed",
+  );
+  assert.equal(
+    await page.evaluate(() =>
+      localStorage.getItem("mega-study-v2:s01e01:status:step-4"),
+    ),
+    "done",
+  );
+  await page.locator("#back-course").click();
+  assert.match(
+    await page.locator('[data-course="s01e01"]').innerText(),
+    /Completed/,
+  );
+  assert.equal(await page.locator("#course-count").textContent(), "1 / 20");
+  await capture("03-completed-overview");
+  await page.locator('[data-course="s01e01"]').click();
   record("Open pending S02E03, then Continue available lesson");
   await page.locator("#back-course").click();
   await page.locator('[data-course="s02e03"]').click();
@@ -307,6 +501,13 @@ try {
       (await context!.request.get(new URL(path, base).href)).status(),
       200,
     );
+  for (const image of await page.locator("#article img").all()) {
+    await image.scrollIntoViewIfNeeded();
+    await image.evaluate(async (element) => {
+      await (element as HTMLImageElement).decode();
+    });
+  }
+  await page.locator("#title").scrollIntoViewIfNeeded();
   await page.waitForFunction(() =>
     [...document.querySelectorAll<HTMLImageElement>("#article img")].every(
       (image) => image.complete && image.naturalWidth > 0,
@@ -360,7 +561,48 @@ try {
     'iframe[src="/study-labs/s01e02/ui/context-self-report/"]',
   );
   await lab.getByText("The agent's context", { exact: true }).waitFor();
+  record(
+    "Verify wheel scrolling moves the Practice panel around the content-sized example",
+  );
+  await page.waitForFunction(() => {
+    const frame = document.querySelector<HTMLIFrameElement>(
+      "#lab-host iframe:not([hidden])",
+    )!;
+    return (
+      frame.clientHeight > 450 &&
+      frame.clientHeight <= document.querySelector("#lab-host")!.clientHeight
+    );
+  });
+  await lab.locator("summary").first().click();
+  await lab.getByText("The agent's context", { exact: true }).hover();
+  const scrollBefore = await page
+    .locator(".practice")
+    .evaluate((panel) => panel.scrollTop);
+  await page.mouse.wheel(0, 500);
+  await page.waitForFunction(
+    (before) => document.querySelector(".practice")!.scrollTop > before + 10,
+    scrollBefore,
+  );
   await capture("07-imported-exercise");
+  record("Check Practice at phone width without horizontal page overflow");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator("#tab-practice").scrollIntoViewIfNeeded();
+  await page.waitForFunction(() => {
+    const frame = document.querySelector<HTMLIFrameElement>(
+      "#lab-host iframe:not([hidden])",
+    )!;
+    return (
+      frame.clientHeight > 450 &&
+      frame.clientHeight <= document.querySelector("#lab-host")!.clientHeight
+    );
+  });
+  assert.ok(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  );
+  await capture("07-mobile-practice");
+  await page.setViewportSize({ width: 1440, height: 1000 });
   record("Open pending lesson import form and reject a non-MEGA URL");
   await page.locator("#back-course").click();
   await page.locator('[data-course="s02e03"]').click();
@@ -413,6 +655,7 @@ try {
   const cleanupErrors: string[] = [];
   for (const operation of [
     () => context?.tracing.stop({ path: join(evidence, "trace.zip") }),
+    () => context?.close(),
     () => browser?.close(),
     async () => {
       if (!child?.pid || child.exitCode !== null || child.signalCode !== null)

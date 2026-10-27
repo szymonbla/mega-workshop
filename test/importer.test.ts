@@ -432,3 +432,79 @@ test("automatic sync preserves legacy local material and stops on expired access
     "Synthetic existing material.",
   );
 });
+
+test("saved connection survives restart and reconnecting does not invalidate another tab", async (t) => {
+  const f = await fixture(t);
+  const restarted = new LessonImporter({ root: f.root, source: f.source });
+  await restarted.initialize();
+  assert.equal(restarted.validSession(f.req), true);
+  let restoredCookie = "";
+  await restarted.connect({
+    setHeader: (_, value) => {
+      restoredCookie = value.split(";")[0];
+    },
+  });
+  assert.equal(restoredCookie, f.req.headers.cookie);
+  assert.equal(restarted.validSession(f.req), true);
+  await Promise.all(
+    Array.from({ length: 3 }, () => restarted.connect({ setHeader: () => {} })),
+  );
+  assert.equal(restarted.validSession(f.req), true);
+  await restarted.logout({ setHeader: () => {} });
+  const loggedOut = new LessonImporter({ root: f.root, source: f.source });
+  await loggedOut.initialize();
+  assert.equal(loggedOut.session, null);
+});
+
+test("status distinguishes network failure from expired access and restores only saved connections", async (t) => {
+  const f = await fixture(t);
+  const handler = createStudyHandler({
+    catalog: {
+      weeks: [],
+      legacySections: [],
+      audioBySlug: new Map(),
+      files: {},
+      assets: new Map(),
+    },
+    publicRoot: f.root,
+    importer: f.importer,
+  });
+  const server = createServer(async (req, res) => {
+    await handler(req, res, { port: (server.address() as AddressInfo).port });
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  const restore = () =>
+    fetch(base + "/study-api/auth/restore", {
+      method: "POST",
+      headers: { Origin: base, "Content-Type": "application/json" },
+      body: "{}",
+    });
+  const restored = await restore();
+  assert.equal((await restored.json()).authenticated, true);
+  assert.ok(
+    restored.headers.get("set-cookie")?.startsWith(f.req.headers.cookie),
+  );
+  const check = f.source.check;
+  f.source.check = async () => {
+    throw Error("net::ERR_INTERNET_DISCONNECTED");
+  };
+  const unavailable = await fetch(base + "/study-api/auth/status", {
+    headers: f.req.headers,
+  });
+  assert.equal(unavailable.status, 400);
+  assert.match((await unavailable.json()).error, /saved login has been kept/);
+  assert.equal(f.importer.validSession(f.req), true);
+  f.source.check = check;
+  f.allow(false);
+  assert.deepEqual(
+    await (
+      await fetch(base + "/study-api/auth/status", { headers: f.req.headers })
+    ).json(),
+    { authenticated: false },
+  );
+  assert.equal((await restore()).status, 401);
+  await f.importer.logout({ setHeader: () => {} });
+  assert.deepEqual(await (await restore()).json(), { authenticated: false });
+});

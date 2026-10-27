@@ -21,6 +21,7 @@ const root = fileURLToPath(new URL("../dist/", import.meta.url));
 async function serve(
   t: TestContext,
   saveSettings: (name: string, value: string) => void,
+  providerFetch: typeof fetch = async () => new Response(null, { status: 200 }),
 ) {
   const section = sectionFixture();
   const catalog = {
@@ -39,6 +40,7 @@ async function serve(
     catalog,
     publicRoot: join(root, "public"),
     saveSettings,
+    providerFetch,
   });
   const server = createServer(async (req, res) => {
     if (
@@ -144,7 +146,7 @@ test("settings validation and write failures keep their HTTP contract", async (t
     400,
   );
   assert.equal((await post(" ".repeat(8193))).status, 413);
-  assert.equal((await post("{")).status, 500);
+  assert.equal((await post("{")).status, 400);
   assert.deepEqual(writes, []);
   const success = await post(body);
   assert.equal(success.status, 200);
@@ -158,6 +160,80 @@ test("settings validation and write failures keep their HTTP contract", async (t
   assert.deepEqual(await failed.json(), {
     error: "Could not save or read data. Check file permissions.",
   });
+});
+
+test("settings explain rejected keys without echoing secrets and accept complete tokens", async (t) => {
+  const writes: { name: string; value: string }[] = [];
+  const { post } = await serve(t, (name, value) =>
+    writes.push({ name, value }),
+  );
+  for (const [key, message] of [
+    ["", "Enter an API key"],
+    ["tiny", "too short"],
+    ["Bearer synthetic-test-key", "Bearer prefix"],
+    ['"synthetic-test-key"', "without quotes"],
+    ["synthetic test key", "spaces or line breaks"],
+    ["synthetic-test-key\nINJECTED=value", "spaces or line breaks"],
+    ["synthetic-test-key\u200b", "unsupported characters"],
+    ["synthetic-test-key#comment", "unsupported characters"],
+    ["x".repeat(4097), "too long"],
+  ]) {
+    const response = await post(JSON.stringify({ provider: "openai", key }));
+    assert.equal(response.status, 400);
+    const { error } = await response.json();
+    assert.ok(error.includes(message));
+    if (key) assert.ok(!error.includes(key));
+  }
+  assert.equal((await post("null")).status, 400);
+  assert.deepEqual(writes, []);
+  for (const provider of ["openai", "openrouter"]) {
+    for (const key of [
+      "synthetic-test-key",
+      "sk-" + "a".repeat(600),
+      "synthetic+test/key==",
+    ]) {
+      const response = await post(
+        JSON.stringify({ provider, key: `  ${key}\n` }),
+      );
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), { ok: true });
+      assert.deepEqual(writes.at(-1), {
+        name: provider === "openai" ? "OPENAI_API_KEY" : "OPENROUTER_API_KEY",
+        value: key,
+      });
+    }
+  }
+});
+
+test("settings verify before saving and preserve the previous key on rejection", async (t) => {
+  const writes: string[] = [];
+  const checks: string[] = [];
+  let upstream = 200;
+  const { post } = await serve(
+    t,
+    (_name, value) => {
+      assert.equal(checks.length, 1);
+      writes.push(value);
+    },
+    async (_url, init) => {
+      checks.push(new Headers(init?.headers).get("Authorization")!);
+      return new Response("private provider details", { status: upstream });
+    },
+  );
+  const submit = (key: string) =>
+    post(JSON.stringify({ provider: "openai", key }));
+  assert.equal((await submit("short")).status, 400);
+  assert.equal(checks.length, 0);
+  assert.equal((await submit("synthetic-original-key")).status, 200);
+  upstream = 401;
+  const rejected = await submit("synthetic-replacement-key");
+  assert.equal(rejected.status, 400);
+  assert.match((await rejected.json()).error, /OpenAI rejected/);
+  assert.deepEqual(writes, ["synthetic-original-key"]);
+  assert.deepEqual(checks, [
+    "Bearer synthetic-original-key",
+    "Bearer synthetic-replacement-key",
+  ]);
 });
 
 test("S01E01 keeps audio and the legacy endpoint data when moved within the curriculum", (t) => {

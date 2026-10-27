@@ -1,0 +1,72 @@
+/* Platform presentation for embedded examples; source repositories stay untouched. */
+:root[data-workshop-lab] {
+  color-scheme: dark;
+  --mega-page: #141419;
+  --mega-surface: #202027;
+  --mega-surface-2: #292930;
+  --mega-ink: #f4f4f5;
+  --mega-ink-body: #d4d4d8;
+  --mega-ink-muted: #a1a1aa;
+  --mega-line: #38383f;
+  --mega-line-strong: #52525b;
+  --mega-heading: system-ui, sans-serif;
+  --mega-sans: system-ui, sans-serif;
+  overflow-y: auto;
+}
+:root[data-workshop-lab][data-theme="light"] {
+  color-scheme: light;
+  --mega-page: #fff;
+  --mega-surface: #f4f4f5;
+  --mega-surface-2: #e4e4e7;
+  --mega-ink: #18181b;
+  --mega-ink-body: #27272a;
+  --mega-ink-muted: #5c5c66;
+  --mega-line: #d4d4d8;
+  --mega-line-strong: #a1a1aa;
+}
+html[data-workshop-lab] body { background: var(--mega-page); font-size: 14px; }
+html[data-workshop-lab] .mx-page { width: 100%; max-width: 960px; margin: 0 auto; padding: 28px; gap: 24px; }
+html[data-workshop-lab] .mx-page > .mx-stack { padding: 24px; border: 1px solid var(--mega-line); border-radius: 10px; background: var(--mega-surface); gap: 16px; }
+html[data-workshop-lab] .mx-label { font: 600 13px/1.5 var(--mega-sans); letter-spacing: 0; text-transform: none; }
+html[data-workshop-lab] .mx-h3 { font: 600 18px/1.4 var(--mega-sans); margin: 0; }
+html[data-workshop-lab] .mx-hint { font: 400 13px/1.6 var(--mega-sans); margin: 0; }
+html[data-workshop-lab] .mx-textarea { background: var(--mega-page); border: 1px solid var(--mega-line-strong); border-radius: 8px; padding: 14px 16px; min-height: 112px; font: 400 15px/1.6 var(--mega-sans); }
+html[data-workshop-lab] .mx-picker { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: 12px 20px; padding: 16px 0; }
+html[data-workshop-lab] .mx-picker .mx-seg { justify-self: start; }
+html[data-workshop-lab] .mx-picker-model { width: 100%; max-width: 420px; min-width: 0; }
+html[data-workshop-lab] .mx-stack > .mx-btn { justify-self: start; padding: 11px 20px; min-height: 44px; border-radius: 7px; background: var(--mega-ink); color: var(--mega-page); border-color: var(--mega-ink); font: 600 14px/1.4 var(--mega-sans); }
+html[data-workshop-lab] #notice:empty { display: none; }
+html[data-workshop-lab] #notice:not(:empty) { padding: 14px 18px; border: 1px solid var(--mega-line); border-radius: 8px; }
+html[data-workshop-lab] #result:empty::before { content: "Your result will appear here after you run the example."; display: block; padding: 24px; border: 1px dashed var(--mega-line-strong); border-radius: 8px; color: var(--mega-ink-muted); text-align: center; font-size: 13px; }
+html[data-workshop-lab] pre { max-width: 100%; overflow: auto; }
+@media(max-width:600px) {
+  html[data-workshop-lab] .mx-page { padding: 12px; gap: 16px; }
+  html[data-workshop-lab] .mx-page > .mx-stack { padding: 16px; }
+  html[data-workshop-lab] .mx-picker { grid-template-columns: minmax(0,1fr); gap: 8px; }
+  html[data-workshop-lab] .mx-picker-model { max-width: none; }
+  html[data-workshop-lab] .mx-stack > .mx-btn { width: 100%; }
+}
+/* Feedback uses the same hierarchy in every supported example. */
+.workshop-result-nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;font-size:13px;color:var(--mega-ink-muted)}
+.workshop-result-nav button{flex-shrink:0;border:1px solid var(--mega-line-strong);border-radius:6px;background:var(--mega-page);padding:9px 14px;font:600 13px var(--mega-sans);color:var(--mega-ink);cursor:pointer}
+.workshop-result-nav button:disabled{opacity:.5;cursor:default}
+.workshop-answer{border:1px solid var(--mega-line-strong);border-radius:8px;background:var(--mega-page);padding:24px;scroll-margin:24px}
+.workshop-response-status{font:600 12px/1.5 var(--mega-sans);color:var(--mega-ink-muted);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.workshop-response-status::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.workshop-answer[data-state=ready]{border-color:#549d76}
+.workshop-answer[data-state=ready] .workshop-response-status{color:var(--mx-ok,#549d76)}
+.workshop-answer[data-state=error]{border-color:#c16a64}
+.workshop-answer[data-state=error] .workshop-response-status{color:#c16a64}
+.workshop-answer[data-state=loading] .workshop-response-status::before{background:transparent;border:2px solid var(--mega-line-strong);border-top-color:var(--mega-ink);width:12px;height:12px;animation:workshop-wait 1s linear infinite}
+.workshop-answer-text{font:400 16px/1.8 var(--mega-sans);white-space:pre-wrap;overflow-wrap:anywhere;color:var(--mega-ink)}
+.workshop-answer-meta{margin:20px 0 0;font-size:12px;color:var(--mega-ink-muted)}
+.workshop-answer-meta:empty{display:none}
+.workshop-response-details{border-top:1px solid var(--mega-line);padding-top:16px;font-size:13px}
+.workshop-response-details summary{cursor:pointer;padding:8px 0;color:var(--mega-ink-muted)}
+.workshop-response-details #result{margin-top:16px}
+.workshop-result-heading{font:600 18px/1.4 var(--mega-sans);margin:0 0 -12px}
+.workshop-live-result{scroll-margin:24px}
+.workshop-live-result .mx-callout{border:1px solid var(--mega-line-strong);border-left:3px solid var(--mega-ink-muted);border-radius:8px;background:var(--mega-surface);padding:20px}
+@keyframes workshop-wait{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.workshop-answer[data-state=loading] .workshop-response-status::before{animation:none}}
+@media(max-width:600px){.workshop-answer{padding:16px}.workshop-result-nav{align-items:flex-start;flex-direction:column;gap:8px}.workshop-answer-text{font-size:15px}}

@@ -9,7 +9,8 @@ import type {
 import { createAudioPlayer } from "./audio-player.ts";
 import { query } from "./dom.ts";
 import { createImportUI } from "./import-ui.ts";
-import { createLabs } from "./labs.ts";
+import { createLabs, linkedLabs } from "./labs.ts";
+import { linkLabel } from "./link-labels.ts";
 import type { Selection } from "./navigation.ts";
 import { resolveRoute, selectSection } from "./navigation.ts";
 import { completion, createProgressStore } from "./progress.ts";
@@ -25,6 +26,7 @@ const labs = createLabs({
   host: $("#lab-host"),
   tabs: $("#lab-tabs"),
   source: $("#source"),
+  guide: $("#practice-guide"),
   getTheme: () => document.documentElement.dataset.theme || "dark",
 });
 let weeks: Week[] = [],
@@ -128,7 +130,17 @@ function nav() {
     $("#chapters").textContent = reviewOnly
       ? "No topics to review."
       : "No results.";
-  const { done: count, total, again } = completion(lessons, state);
+  const topicDone = state.done.includes(selection.section.id);
+  $("#complete-topic").hidden = selection.section.kind !== "topic";
+  $("#complete-topic").setAttribute("aria-pressed", String(topicDone));
+  $("#complete-topic").textContent = topicDone
+    ? "✓ Completed · Undo"
+    : "Mark topic complete";
+  const { done: count, total, again, complete } = completion(lessons, state);
+  $("#complete-lesson").disabled = complete || total === 0;
+  $("#complete-lesson").textContent = complete
+    ? "✓ Lesson completed"
+    : "Complete lesson";
   $("#bar").style.width = `${total ? (count / total) * 100 : 0}%`;
   $("#progress-label").textContent = `${count} of ${total} topics completed`;
   $("#review").textContent = reviewOnly
@@ -150,8 +162,17 @@ function showPanel(name: string) {
     $(`#tab-${panel}`).setAttribute("aria-selected", String(selected));
     $(`#tab-${panel}`).tabIndex = selected ? 0 : -1;
   }
+  $("main").classList.toggle("practicing", name === "practice");
+  if (name === "practice") player.pause();
   player.refresh();
+  if ($(".workspace-tabs").getBoundingClientRect().bottom < 0)
+    $(".workspace-tabs").scrollIntoView({ block: "start" });
 }
+for (const id of ["#practice-read", "#practice-return"])
+  $(id).onclick = () => {
+    showPanel("read");
+    $("#tab-read").focus();
+  };
 for (const name of ["read", "practice"])
   $("#tab-" + name).onclick = () => showPanel(name);
 $(".workspace-tabs").addEventListener("keydown", (event) => {
@@ -207,14 +228,25 @@ function renderSection(next: Exclude<Selection, { kind: "overview" }>) {
         /github\.com\/MEGA-DOT-DEV\/examples\/tree\/main\/(?:examples|tools)\/([a-z0-9-]+)/.exec(
           link.href,
         );
-      if (match && hasPractice(section)) {
+      const practice = Boolean(
+        match && hasPractice(section) && section.labs.includes(match[1]),
+      );
+      const badge = document.createElement("span");
+      badge.className = "link-badge";
+      badge.textContent = linkLabel(
+        link.href,
+        link.textContent || "",
+        practice,
+      );
+      link.append(" ", badge);
+      if (match && practice) {
         link.addEventListener("click", (event) => {
           event.preventDefault();
           labs.select(section, match[1]);
           showPanel("practice");
           $(".practice").scrollTop = 0;
         });
-        link.title = "Open in Practice";
+        link.title = "Open example with instructions";
       } else {
         link.target = "_blank";
         link.rel = "noopener noreferrer";
@@ -226,41 +258,150 @@ function renderSection(next: Exclude<Selection, { kind: "overview" }>) {
       image.loading = "lazy";
       image.alt = "Illustration from the MEGA.dev article";
     });
-  $("#task").textContent = section.task;
+
   $("#tab-practice").hidden = !hasPractice(section);
   $(".workspace-tabs").hidden = !hasPractice(section);
   labs.select(section);
   showPanel("read");
   nav();
+  window.scrollTo({ top: 0, behavior: "instant" });
   $(".reader").scrollTop = 0;
   $(".practice").scrollTop = 0;
 }
 
+let providerStatus: ProviderStatus | undefined;
+let replacingKey = false;
+let savingKey = false;
+let loadingKeys = false;
+const selectedKeyName = () =>
+  $("#provider").value === "openai" ? "OPENAI_API_KEY" : "OPENROUTER_API_KEY";
+function renderKeySettings() {
+  const saved = providerStatus?.providers.find(
+    (p) => p.envKey === selectedKeyName(),
+  )?.set;
+  const locked = loadingKeys || !providerStatus || (saved && !replacingKey);
+  const name = $("#provider").value === "openai" ? "OpenAI" : "OpenRouter";
+  $("#provider-key-status").textContent = loadingKeys
+    ? "Checking saved keys…"
+    : !providerStatus
+      ? "Could not load saved keys. Close settings and try again."
+      : saved
+        ? `${name} API key is saved on this computer. ${replacingKey ? "Your current key stays active until the replacement is verified and saved." : "All labs can use it. Only one key per provider can be saved."}`
+        : `No ${name} API key saved.`;
+  $("#key-entry").hidden = !!locked;
+  $("#api-key").disabled = !!locked || savingKey;
+  $("#key-form button[type=submit]").disabled = !!locked || savingKey;
+  $("#key-form button[type=submit]").textContent = replacingKey
+    ? "Verify and replace key"
+    : "Verify and save key";
+  $("#replace-key").hidden = !saved || replacingKey || loadingKeys;
+  $("#cancel-key-change").hidden = !replacingKey;
+  $("#cancel-key-change").disabled = savingKey;
+  $("#provider").disabled = savingKey || loadingKeys;
+  $("#close-config").disabled = savingKey;
+  for (const option of $("#provider").options) {
+    const keyName =
+      option.value === "openai" ? "OPENAI_API_KEY" : "OPENROUTER_API_KEY";
+    const name = option.value === "openai" ? "OpenAI" : "OpenRouter";
+    option.textContent =
+      name +
+      (providerStatus?.providers.find((p) => p.envKey === keyName)?.set
+        ? " · Key saved"
+        : "");
+  }
+}
 async function status() {
   const response = await fetch("/api/status");
   if (!response.ok) throw Error("Could not load settings.");
-  const data: ProviderStatus = await response.json();
-  const configured = data.providers.filter((provider) => provider.set);
+  providerStatus = await response.json();
+  const configured = providerStatus!.providers.filter(
+    (provider) => provider.set,
+  );
   $("#key-status").textContent = configured.length
-    ? `${configured.map((provider) => provider.name).join(" + ")} · ready`
+    ? `${configured.map((provider) => provider.name).join(" + ")} · key saved`
     : "Add an API key";
+  renderKeySettings();
+}
+function resetKeyEditor() {
+  replacingKey = false;
+  $("#api-key").value = "";
+  $("#config-status").textContent = "";
+  $("#config-status").dataset.error = "false";
+  renderKeySettings();
 }
 $("#search").oninput = nav;
+$("#complete-topic").onclick = () => {
+  if (selection.kind !== "reader" || selection.section.kind !== "topic") return;
+  const done = progress
+    .read(selection.lesson)
+    .done.includes(selection.section.id);
+  const result = progress.mark(
+    selection.lesson,
+    selection.section.id,
+    done ? "pending" : "done",
+  );
+  state = result.state;
+  nav();
+  $("#saved").textContent = result.saved
+    ? done
+      ? "Topic marked incomplete. Progress saved."
+      : "Topic completed. Progress saved."
+    : "Could not save progress in this browser. This change is kept for this session only.";
+};
+$("#complete-lesson").onclick = () => {
+  if (selection.kind !== "reader") return;
+  const result = progress.completeLesson(selection.lesson);
+  state = result.state;
+  player.pause();
+  nav();
+  $("#saved").textContent = result.saved
+    ? "Lesson completed. Progress saved in this browser."
+    : "Lesson completed for this session only. Could not save progress in this browser.";
+};
 $("#review").onclick = () => {
   reviewOnly = !reviewOnly;
   nav();
 };
-$("#settings").onclick = () => $("#config").showModal();
+$("#settings").onclick = async () => {
+  loadingKeys = true;
+  resetKeyEditor();
+  $("#config").showModal();
+  try {
+    await status();
+  } catch {
+    providerStatus = undefined;
+  } finally {
+    loadingKeys = false;
+    renderKeySettings();
+  }
+};
 $("#close-config").onclick = () => $("#config").close();
-$("#config").addEventListener("close", () => {
-  $("#api-key").value = "";
+$("#config").addEventListener("close", resetKeyEditor);
+$("#config").addEventListener("cancel", (event) => {
+  if (savingKey) event.preventDefault();
 });
+$("#replace-key").onclick = () => {
+  replacingKey = true;
+  renderKeySettings();
+  $("#api-key").focus();
+};
+$("#cancel-key-change").onclick = resetKeyEditor;
+const clearKeyError = () => {
+  if ($("#config-status").dataset.error === "true") {
+    $("#config-status").textContent = "";
+    $("#config-status").dataset.error = "false";
+  }
+};
+$("#api-key").oninput = clearKeyError;
+$("#provider").onchange = resetKeyEditor;
 $("#key-form").onsubmit = async (event) => {
   event.preventDefault();
   const button = $("#key-form button[type=submit]");
-  button.disabled = true;
+  if (button.disabled) return;
+  savingKey = true;
+  renderKeySettings();
   $("#config-status").dataset.error = "false";
-  $("#config-status").textContent = "Saving…";
+  $("#config-status").textContent = "Verifying key with provider…";
   try {
     const response = await fetch("/study-api/settings", {
       method: "POST",
@@ -273,15 +414,22 @@ $("#key-form").onsubmit = async (event) => {
     const result = await response.json();
     if (!response.ok) throw Error(result.error);
     $("#api-key").value = "";
-    await status();
+    replacingKey = false;
+    // Saving succeeded even if refreshing the header temporarily fails.
+    const savedProvider = providerStatus?.providers.find(
+      (p) => p.envKey === selectedKeyName(),
+    );
+    if (savedProvider) savedProvider.set = true;
+    await status().catch(() => {});
     $("#config-status").textContent =
-      "Saved. All labs can access your key. The first request will verify it.";
+      "Saved. API key verified. Model access and available credits depend on your account.";
     labs.reset();
   } catch (error) {
     $("#config-status").dataset.error = "true";
     $("#config-status").textContent = errorMessage(error);
   } finally {
-    button.disabled = false;
+    savingKey = false;
+    renderKeySettings();
   }
 };
 
@@ -397,9 +545,9 @@ addEventListener("popstate", () => {
 async function loadCourse() {
   try {
     const responses = await Promise.all([
-      fetch("/study-api/curriculum"),
-      fetch("/api/items"),
-      fetch("/study-api/import-labs"),
+      fetch("/study-api/curriculum", { signal: AbortSignal.timeout(60000) }),
+      fetch("/api/items", { signal: AbortSignal.timeout(60000) }),
+      fetch("/study-api/import-labs", { signal: AbortSignal.timeout(60000) }),
     ]);
     if (responses.some((response) => !response.ok))
       throw Error("The server did not return the course content.");
@@ -408,6 +556,8 @@ async function loadCourse() {
     );
     weeks = curriculum.weeks;
     courseLessons = weeks.flatMap((week) => week.lessons);
+    for (const lesson of courseLessons)
+      for (const section of lesson.sections) section.labs = linkedLabs(section);
     labs.setItems([...items, ...importedItems]);
     route();
     status().catch(() => {
@@ -417,6 +567,7 @@ async function loadCourse() {
     setView("overview");
     $("#overview-title").textContent = "Could not load MEGA Workshop";
     $("#resume-card").textContent = errorMessage(error);
+    throw error;
   }
 }
 const importer = createImportUI({

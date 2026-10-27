@@ -76,7 +76,7 @@ export class LessonImporter {
   directory: string;
   jobs: Map<string, ImportJob>;
   running: ImportJob | null;
-  session: { hash: string; expires: number } | null;
+  session: { hash: string; expires: number; token?: string } | null;
   closing = false;
   task?: Promise<void>;
   syncTask?: Promise<void>;
@@ -144,11 +144,22 @@ export class LessonImporter {
     if (!this.validSession(req)) throw new AccessError();
     return this.source.check(id);
   }
+  private connecting: Promise<void> | null = null;
   async connect(res: SessionResponse) {
+    while (this.connecting) await this.connecting;
+    this.connecting = this.saveConnection(res);
+    try {
+      await this.connecting;
+    } finally {
+      this.connecting = null;
+    }
+  }
+  private async saveConnection(res: SessionResponse) {
     await this.source.check("s01e01");
-    const token = randomBytes(32).toString("hex");
+    const token = this.session?.token || randomBytes(32).toString("hex");
     this.session = {
       hash: digest(token),
+      token,
       expires: Date.now() + 30 * 24 * 3600 * 1000,
     };
     await writeJSON(join(this.directory, "session.json"), this.session);

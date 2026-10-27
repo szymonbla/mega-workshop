@@ -11,6 +11,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { materialRoot } from "../../src/server/paths.ts";
 import { startStudy } from "../../src/server/server.ts";
+import { syntheticProviderFetch } from "./provider.ts";
 import { sourceMetadata } from "./synthetic.ts";
 
 const directory = await mkdtemp(join(tmpdir(), "mega-test-session-"));
@@ -32,7 +33,12 @@ const source = {
   logout: async () => {},
   close: async () => {},
 };
-const viewer = await startStudy({ root, source, stateDirectory: directory });
+const viewer = await startStudy({
+  providerFetch: syntheticProviderFetch,
+  root,
+  source,
+  stateDirectory: directory,
+});
 console.log(`MEGA Workshop → ${viewer.url}`);
 process.on("SIGTERM", async () => {
   await viewer.close();
