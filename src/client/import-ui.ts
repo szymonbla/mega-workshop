@@ -42,6 +42,7 @@ export function createImportUI({
   function lock() {
     if (authenticated) onDisconnected();
     authenticated = false;
+    $("#import-toast").hidden = true;
     $("#import-sync").hidden = true;
     $("#import-auth").hidden = false;
     $("#import-form").hidden = true;
@@ -131,6 +132,12 @@ export function createImportUI({
         await onConnected();
       }
       const syncing = sync?.status === "running";
+      $("#import-toast").textContent = syncing
+        ? sync.total
+          ? `Downloading lessons · ${sync.done}/${sync.total}`
+          : "Checking available lessons…"
+        : "";
+      $("#import-toast").hidden = !syncing;
       $("#import-sync").disabled = syncing;
       $("#import-submit").disabled = syncing || job?.status === "running";
       $("#import-disconnect").disabled = syncing || job?.status === "running";

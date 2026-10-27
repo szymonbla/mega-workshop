@@ -2,6 +2,7 @@ interface AppElements {
   "#course-home": HTMLElementTagNameMap["button"];
   "#theme-toggle": HTMLElementTagNameMap["button"];
   "#import-button": HTMLElementTagNameMap["button"];
+  "#import-toast": HTMLElementTagNameMap["div"];
   "#settings": HTMLElementTagNameMap["button"];
   "#key-status": HTMLElementTagNameMap["span"];
   "#course-overview": HTMLElementTagNameMap["section"];

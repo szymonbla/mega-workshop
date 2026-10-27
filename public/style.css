@@ -17,6 +17,7 @@ dialog{border:1px solid var(--mega-line-strong);border-top:3px solid var(--mega-
 
 /* A familiar course outline and one spacious workspace at a time. */
 [hidden]{display:none!important}
+#import-toast{position:fixed;top:72px;left:50%;transform:translateX(-50%);z-index:100;max-width:calc(100vw - 32px);width:max-content;padding:10px 14px;border:1px solid var(--mega-line);border-radius:8px;background:var(--mega-surface);color:var(--mega-ink);box-shadow:0 4px 18px #0002;font:12px/1.5 var(--mega-sans);pointer-events:none}
 header{height:60px}
 .layout{height:calc(100dvh - 60px);grid-template-columns:240px minmax(0,1fr)}
 .aside-top{padding:20px 20px 12px}
