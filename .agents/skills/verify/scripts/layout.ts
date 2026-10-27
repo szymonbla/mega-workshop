@@ -119,7 +119,7 @@ export async function verifyLayout(
   await page.locator("#tab-practice").click();
   const tabPosition = await page.locator(".workspace-tabs").boundingBox();
   assert.ok(tabPosition);
-  await page.mouse.move(380, 400);
+  await page.mouse.move(tabPosition.x + 10, tabPosition.y + 10);
   await page.mouse.wheel(0, tabPosition.y);
   await page.waitForFunction(() => window.scrollY > 0);
   await capture("mobile-scrolled-practice");
