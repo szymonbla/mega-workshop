@@ -14,7 +14,7 @@ declare global {
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test, { after, before } from "node:test";
@@ -546,4 +546,153 @@ test("import dialog shows server progress and resumes an interrupted job with th
   await page.locator("#import-button").click();
   await page.waitForSelector("#import-steps [data-state=running]");
   assert.equal(await page.locator("#import-submit").isDisabled(), true);
+});
+
+test("practice presents pending, readable answer, changed input and failed retry (synthetic API)", {
+  timeout: 60000,
+}, async (t) => {
+  const context = await openContext(t);
+  const page = await context.newPage();
+  let complete: (() => void) | undefined;
+  let requestNumber = 0;
+  let requestStarted!: () => void;
+  const started = new Promise<void>((resolve) => {
+    requestStarted = resolve;
+  });
+  const evidence = join(dataHome, ".audit", "practice-feedback");
+  await mkdir(evidence, { recursive: true });
+  // Simulate the example API response; no provider request leaves this browser.
+  await context.route(
+    "**/api/items/responses-request/call/run",
+    async (route) => {
+      requestNumber++;
+      if (requestNumber === 1) {
+        await new Promise<void>((resolve) => {
+          complete = resolve;
+          requestStarted();
+        });
+        await route.fulfill({
+          json: {
+            ok: true,
+            result: {
+              status: 200,
+              response: {
+                model: "synthetic-model",
+                output: [
+                  {
+                    type: "message",
+                    content: [
+                      {
+                        type: "output_text",
+                        text: "A model can summarize a document.\nCheck the summary against the original.",
+                      },
+                    ],
+                  },
+                ],
+                usage: { input_tokens: 12, output_tokens: 18 },
+              },
+            },
+          },
+        });
+      } else
+        await route.fulfill({
+          json: { ok: false, error: "Synthetic connection failure" },
+        });
+    },
+  );
+  await page.goto(base + "#/lesson/s01e01/request");
+  await page
+    .locator("#chapters button")
+    .filter({ hasText: "Model Requests" })
+    .click();
+  await page.locator("#tab-practice").click();
+  const lab = page.frameLocator('iframe[src="/ui/responses-request/"]');
+  await lab.locator("#run").filter({ hasText: "Get model response" }).waitFor();
+  await lab.locator("#run").click();
+  await lab.locator('.workshop-answer[data-state="loading"]').waitFor();
+  assert.equal(await lab.locator("#run").isDisabled(), true);
+  await started;
+  await page.screenshot({
+    path: join(evidence, "waiting.png"),
+    fullPage: true,
+  });
+  assert.ok(complete);
+  complete();
+  await lab.locator('.workshop-answer[data-state="ready"]').waitFor();
+  assert.match(
+    await lab.locator(".workshop-answer-text").innerText(),
+    /A model can summarize/,
+  );
+  assert.equal(
+    await lab.locator(".workshop-response-details").getAttribute("open"),
+    null,
+  );
+  await lab.locator(".workshop-result-nav button").click();
+  await page.screenshot({
+    path: join(evidence, "answer-desktop.png"),
+    fullPage: true,
+  });
+  await lab.locator(".workshop-response-details summary").click();
+  assert.match(await lab.locator("#result").innerText(), /synthetic-model/);
+  await lab.locator(".workshop-response-details summary").click();
+  await lab.locator("#prompt").fill("A different prompt");
+  assert.match(
+    await lab.locator(".workshop-response-status").innerText(),
+    /input has changed/,
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  await lab.locator(".workshop-result-nav button").click();
+  await page.screenshot({
+    path: join(evidence, "answer-mobile.png"),
+    fullPage: true,
+  });
+  assert.equal(
+    await lab
+      .locator("html")
+      .evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    true,
+  );
+  await lab.locator("#run").click();
+  await lab.locator('.workshop-answer[data-state="error"]').waitFor();
+  assert.match(
+    await lab.locator(".workshop-answer-text").innerText(),
+    /Synthetic connection failure/,
+  );
+  assert.doesNotMatch(
+    await lab.locator(".workshop-answer-text").innerText(),
+    /A model can summarize/,
+  );
+  assert.equal(
+    await lab.locator(".workshop-response-details").isVisible(),
+    false,
+  );
+});
+
+test("context budget distinguishes a live calculation from an API answer", async (t) => {
+  const context = await openContext(t);
+  const page = await context.newPage();
+  await page.goto(base + "#/lesson/s01e01/context-budget");
+  await waitTitle(page, "Context Budget");
+  await page.locator("#tab-practice").click();
+  const lab = page.frameLocator('iframe[src="/ui/context-window-budget/"]');
+  await lab
+    .locator("#headline")
+    .filter({ hasText: "This request uses" })
+    .waitFor();
+  const previous = await lab.locator("#headline").textContent();
+  await lab.locator("#filler-10k").click();
+  await page.waitForFunction((before) => {
+    const frame = document.querySelector<HTMLIFrameElement>(
+      'iframe[src="/ui/context-window-budget/"]',
+    );
+    const text =
+      frame?.contentDocument?.querySelector("#headline")?.textContent;
+    return Boolean(text?.includes("This request uses") && text !== before);
+  }, previous);
+  assert.notEqual(await lab.locator("#headline").textContent(), previous);
+  await lab.locator(".workshop-result-nav button").click();
+  assert.equal(
+    await lab.locator(".workshop-result-heading").innerText(),
+    "Your result · live calculation",
+  );
 });

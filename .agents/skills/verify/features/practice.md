@@ -25,3 +25,7 @@ Preconditions: isolated instance with course-examples dependencies installed; no
 ## Gotchas
 
 Practice is hidden unless the section’s rendered article has a link to one of its registered examples. Stale lab metadata alone must not create the tab. Tokenization is safe without credentials; other experiments may make billed server-side calls. Off-origin browser blocking does not block server-side providers. Do not claim paid-lab behavior verified by this local experiment. Settings saves deliberately reset lab frames.
+
+## Response feedback
+
+`test/browser/app.test.ts` simulates the Responses example API to verify pending, readable response, collapsed technical details, input changes and failed retry states without provider calls. This is synthetic UI coverage, not a live provider proof. A separate browser test exercises the real local Context Budget calculation and its View result control.

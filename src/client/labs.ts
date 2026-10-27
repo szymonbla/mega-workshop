@@ -1,4 +1,5 @@
 import type { LabItem, Section } from "../shared/types.ts";
+import { installLabFeedback } from "./lab-feedback.ts";
 /** Only offer examples actually linked in this section's rendered article. */
 export function linkedLabs(section: Section): string[] {
   const article = document.createElement("template");
@@ -169,14 +170,22 @@ export function createLabs({
               );
             }
           };
+          const stopFeedback = installLabFeedback(content, name);
           style.onload = resize;
           content.head.append(style);
           const observer = new ResizeObserver(resize);
           const page = content.querySelector(".mx-page");
           if (page) observer.observe(page);
-          frame.addEventListener("load", () => observer.disconnect(), {
-            once: true,
-          });
+          frame.addEventListener(
+            "load",
+            () => {
+              observer.disconnect();
+              stopFeedback();
+            },
+            {
+              once: true,
+            },
+          );
         } catch {}
       });
       frames.set(frameKey, frame);
